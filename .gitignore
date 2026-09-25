@@ -1,0 +1,12 @@
+.DS_Store
+node_modules/
+DerivedData/
+build/
+*.ipa
+*.xcresult
+*.xcarchive
+*.mobileprovision
+*.p12
+*.pem
+*.key
+SupabaseConfig.plist

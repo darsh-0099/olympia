@@ -1,0 +1,135 @@
+import SwiftUI
+import UniformTypeIdentifiers
+
+struct OlympiaSettingsView: View {
+    @ObservedObject var store: OlympiaTrainingStore
+    @Environment(\.olympiaColors) private var colors
+    @AppStorage("olympia.units") private var units = "lb"
+    @AppStorage("olympia.theme") private var theme = "system"
+    @AppStorage("olympia.accent") private var accent = "sky"
+    @AppStorage("olympia.displayName") private var displayName = ""
+    @State private var importKind: ImportKind?
+    @State private var showImporter = false
+    @State private var importReport: OlympiaImportReport?
+    @State private var backupURL: URL?
+    @State private var alertMessage: String?
+    @StateObject private var cloud = OlympiaCloud.shared
+    @State private var email = ""
+    @State private var password = ""
+    @State private var showSensor = false
+    private enum ImportKind: String, Identifiable { case workouts, weights; var id: String { rawValue } }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    HStack(spacing: 12) {
+                        Image("OlympiaMark").resizable().scaledToFit().frame(width: 48, height: 48)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        VStack(alignment: .leading) {
+                            Text("Olympia").font(.headline)
+                            Text("Your training data stays on this iPhone until cloud sync is connected.")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                Section("Profile") {
+                    TextField("Your name", text: $displayName)
+                        .textContentType(.name).textInputAutocapitalization(.words)
+                    if let email = cloud.signedInEmail { Text(email).font(.caption).foregroundStyle(.secondary) }
+                }
+                Section("Appearance") {
+                    Picker("Mode", selection: $theme) {
+                        Text("System").tag("system"); Text("Dark").tag("dark"); Text("Light").tag("light")
+                    }
+                    Picker("Accent", selection: $accent) {
+                        Text("Sky blue").tag("sky"); Text("Emerald").tag("emerald")
+                        Text("Violet").tag("violet"); Text("Sunset").tag("sunset")
+                    }
+                }
+                Section("Workout preferences") {
+                    Picker("Weight units", selection: $units) { Text("Pounds (lb)").tag("lb"); Text("Kilograms (kg)").tag("kg") }
+                }
+                Section("Data & privacy") {
+                    Button { exportBackup() } label: {
+                        Label("Export all training data", systemImage: "square.and.arrow.up")
+                    }
+                    if let backupURL { ShareLink("Share backup", item: backupURL) }
+                    Button { importKind = .workouts; showImporter = true } label: {
+                        Label("Import workout data", systemImage: "square.and.arrow.down")
+                    }
+                    Button { importKind = .weights; showImporter = true } label: {
+                        Label("Import body weight data", systemImage: "square.and.arrow.down")
+                    }
+                    Text("Import a workout note or text file, or a weight log note or text file.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Section("Heart rate") {
+                    Button { showSensor = true } label: {
+                        Label("Connect or view heart-rate sensor", systemImage: "heart.text.square")
+                    }
+                    Text("Use Live to connect a Bluetooth heart-rate strap or a device broadcasting the standard Heart Rate Service. Live Activities show sensor readings while the app is open or backgrounded when iOS permits.")
+                        .font(.caption).foregroundStyle(.secondary)
+                    Text("Heart-rate metrics are for fitness and wellness, not diagnosis or emergency monitoring.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Section("Cloud sync · Supabase") {
+                    TextField("Project URL", text: $cloud.projectURL)
+                        .textInputAutocapitalization(.never).autocorrectionDisabled()
+                    SecureField("Publishable / anon key", text: $cloud.publishableKey)
+                    if cloud.signedIn {
+                        Text(cloud.signedInEmail ?? "Signed in").font(.caption).foregroundStyle(.secondary)
+                        Button(cloud.isBusy ? "Syncing…" : "Sync now") { Task { await cloud.sync(store: store) } }
+                            .disabled(cloud.isBusy)
+                        Button("Sign out", role: .destructive) { cloud.signOut() }
+                    } else {
+                        TextField("Email", text: $email).textInputAutocapitalization(.never)
+                            .keyboardType(.emailAddress).autocorrectionDisabled()
+                        SecureField("Password", text: $password)
+                        HStack {
+                            Button("Sign in") { Task { await cloud.signIn(email: email, password: password) } }
+                            Spacer()
+                            Button("Create account") { Task { await cloud.signUp(email: email, password: password) } }
+                        }.disabled(!cloud.configured || cloud.isBusy || email.isEmpty || password.count < 6)
+                    }
+                    if let message = cloud.message { Text(message).font(.caption).foregroundStyle(.secondary) }
+                    Text("Create a free Supabase project and run the included schema.sql first. Only use its publishable key here—not a service-role key.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            .navigationTitle("Settings")
+            .sheet(isPresented: $showSensor) { LiveView() }
+            .fileImporter(isPresented: $showImporter,
+                          allowedContentTypes: [.plainText, .utf8PlainText], allowsMultipleSelection: false) { result in
+                guard let kind = importKind else { return }
+                importKind = nil
+                do {
+                    let url = try result.get().first!
+                    let access = url.startAccessingSecurityScopedResource()
+                    defer { if access { url.stopAccessingSecurityScopedResource() } }
+                    let text = try String(contentsOf: url, encoding: .utf8)
+                    importReport = kind == .workouts
+                        ? OlympiaNoteImporter.importWorkouts(text, into: store)
+                        : OlympiaNoteImporter.importWeights(text, into: store)
+                    let report = importReport!
+                    alertMessage = "Imported \(report.sessions) workouts, \(report.sets) sets, and \(report.weights) weights. \(report.skipped) lines were skipped."
+                } catch { alertMessage = error.localizedDescription }
+            }
+            .alert("Import / export", isPresented: Binding(get: { alertMessage != nil }, set: { if !$0 { alertMessage = nil } })) {
+                Button("OK") { alertMessage = nil }
+            } message: { Text(alertMessage ?? "") }
+        }.tint(colors.accent)
+    }
+
+    private func exportBackup() {
+        do {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            encoder.dateEncodingStrategy = .iso8601
+            let data = try encoder.encode(OlympiaBackup(store: store))
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent("Olympia-Backup.json")
+            try data.write(to: url, options: .atomic)
+            backupURL = url
+        } catch { alertMessage = error.localizedDescription }
+    }
+}

@@ -1,0 +1,58 @@
+name: Olympia iPhone preview
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 45
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+      SOLARH9_BUNDLE_ID: com.olympia.app
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify and unpack reviewed Olympia source
+        run: |
+          echo '5702adb40cd2bb6f7cec486aebbaf0a7fbf726e8bd9dd5a7dea535734e76cb0b  Olympia-source.zip' | shasum -a 256 -c -
+          python3 - <<'PY'
+          import zipfile
+          from pathlib import PurePosixPath
+          allowed = {'SolarH9', 'SolarH9.xcodeproj', 'SolarH9LiveActivity', 'SolarH9Tests', 'scripts', 'supabase', 'README.md', '.gitignore'}
+          with zipfile.ZipFile('Olympia-source.zip') as archive:
+              for entry in archive.infolist():
+                  path = PurePosixPath(entry.filename)
+                  if path.is_absolute() or '..' in path.parts or path.parts[0] not in allowed:
+                      raise ValueError(f'Unexpected source path: {entry.filename}')
+              archive.extractall('.')
+          PY
+      - name: Record toolchain
+        run: |
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+      - name: Validate project and resources
+        run: |
+          plutil -lint SolarH9.xcodeproj/project.pbxproj SolarH9/Resources/Info.plist SolarH9LiveActivity/Info.plist
+          bash -n scripts/build_unsigned_ipa.sh scripts/validate_ipa.sh
+          test "$(sips -g pixelWidth SolarH9/Resources/Assets.xcassets/AppIcon.appiconset/Olympia-1024.png | tail -1 | awk '{print $2}')" = 1024
+      - name: Compile for iPhone simulator
+        run: |
+          xcodebuild -project SolarH9.xcodeproj -scheme SolarH9 \
+            -configuration Debug -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build
+      - name: Build unsigned iPhone IPA
+        run: bash scripts/build_unsigned_ipa.sh
+      - name: Record checksum
+        run: shasum -a 256 Olympia.ipa > Olympia.sha256
+      - name: Upload engineering preview
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Olympia-preview-${{ github.run_number }}
+          path: |
+            Olympia.ipa
+            Olympia.sha256
+          retention-days: 7

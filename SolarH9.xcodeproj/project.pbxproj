@@ -1,0 +1,504 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A00000000000000000000039 /* OlympiaCloud.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000039 /* OlympiaCloud.swift */; };
+		A00000000000000000000030 /* OlympiaTrainingStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000030 /* OlympiaTrainingStore.swift */; };
+		A00000000000000000000031 /* OlympiaWorkoutEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000031 /* OlympiaWorkoutEngine.swift */; };
+		A00000000000000000000032 /* OlympiaViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000032 /* OlympiaViews.swift */; };
+		A00000000000000000000033 /* OlympiaProgramViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000033 /* OlympiaProgramViews.swift */; };
+		A00000000000000000000034 /* OlympiaActiveWorkoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000034 /* OlympiaActiveWorkoutView.swift */; };
+		A00000000000000000000035 /* OlympiaHistoryViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000035 /* OlympiaHistoryViews.swift */; };
+		A00000000000000000000036 /* OlympiaProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000036 /* OlympiaProgressView.swift */; };
+		A00000000000000000000037 /* OlympiaImportExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000037 /* OlympiaImportExport.swift */; };
+		A00000000000000000000038 /* OlympiaSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000038 /* OlympiaSettingsView.swift */; };
+		A00000000000000000000001 /* SolarH9App.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000001 /* SolarH9App.swift */; };
+		A00000000000000000000002 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000002 /* AppModel.swift */; };
+		A00000000000000000000003 /* SolarTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000003 /* SolarTheme.swift */; };
+		A00000000000000000000004 /* DomainModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000004 /* DomainModels.swift */; };
+		A00000000000000000000005 /* MetricResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000005 /* MetricResult.swift */; };
+		A00000000000000000000006 /* Protocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000006 /* Protocols.swift */; };
+		A00000000000000000000007 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000007 /* OnboardingView.swift */; };
+		A00000000000000000000008 /* RootTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000008 /* RootTabView.swift */; };
+		A00000000000000000000009 /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000009 /* TodayView.swift */; };
+		A0000000000000000000000A /* LiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0000000000000000000000A /* LiveView.swift */; };
+		A0000000000000000000000B /* TrendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0000000000000000000000B /* TrendsView.swift */; };
+		A0000000000000000000000D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0000000000000000000000D /* SettingsView.swift */; };
+		A0000000000000000000000E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B0000000000000000000000E /* Assets.xcassets */; };
+		A0000000000000000000000F /* DomainFoundationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000010 /* DomainFoundationTests.swift */; };
+		A00000000000000000000010 /* HeartRateMeasurementParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000013 /* HeartRateMeasurementParser.swift */; };
+		A00000000000000000000011 /* ConnectionReducer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000014 /* ConnectionReducer.swift */; };
+		A00000000000000000000012 /* SimulatedHeartRateSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000015 /* SimulatedHeartRateSource.swift */; };
+		A00000000000000000000013 /* PolarH9Client.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000016 /* PolarH9Client.swift */; };
+		A00000000000000000000014 /* SensorPipelineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000017 /* SensorPipelineTests.swift */; };
+		A00000000000000000000015 /* MetricsEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000018 /* MetricsEngine.swift */; };
+		A00000000000000000000016 /* PersistenceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000019 /* PersistenceModels.swift */; };
+		A00000000000000000000017 /* RecordingController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0000000000000000000001A /* RecordingController.swift */; };
+		A00000000000000000000018 /* MetricsEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0000000000000000000001B /* MetricsEngineTests.swift */; };
+		A00000000000000000000019 /* PersistenceRecordingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0000000000000000000001C /* PersistenceRecordingTests.swift */; };
+		A0000000000000000000001A /* ProductServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0000000000000000000001D /* ProductServices.swift */; };
+		A0000000000000000000001B /* SessionSummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0000000000000000000001E /* SessionSummaryView.swift */; };
+		A0000000000000000000001C /* FeatureFlags.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0000000000000000000001F /* FeatureFlags.swift */; };
+		A0000000000000000000001D /* SanitizedDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000020 /* SanitizedDiagnostics.swift */; };
+		A0000000000000000000001E /* SanitizedDiagnosticsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000021 /* SanitizedDiagnosticsTests.swift */; };
+		A0000000000000000000001F /* ProductServicesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000022 /* ProductServicesTests.swift */; };
+		A00000000000000000000020 /* HeartRateActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000023 /* HeartRateActivityAttributes.swift */; };
+		A00000000000000000000021 /* HeartRateLiveActivityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000024 /* HeartRateLiveActivityController.swift */; };
+		A00000000000000000000022 /* HeartRateActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000023 /* HeartRateActivityAttributes.swift */; };
+		A00000000000000000000023 /* HeartRateLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000025 /* HeartRateLiveActivityWidget.swift */; };
+		A00000000000000000000024 /* SolarH9LiveActivity.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = B00000000000000000000027 /* SolarH9LiveActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A00000000000000000000025 /* SolarZoneLadder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000028 /* SolarZoneLadder.swift */; };
+		A00000000000000000000026 /* CoachEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000029 /* CoachEngine.swift */; };
+		A00000000000000000000027 /* CoachView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0000000000000000000002A /* CoachView.swift */; };
+		A00000000000000000000028 /* AppearanceLabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0000000000000000000002B /* AppearanceLabView.swift */; };
+		A00000000000000000000029 /* ExperienceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0000000000000000000002C /* ExperienceTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		C00000000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D00000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E00000000000000000000001;
+			remoteInfo = SolarH9;
+		};
+		C00000000000000000000002 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D00000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E00000000000000000000003;
+			remoteInfo = SolarH9LiveActivity;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		700000000000000000000001 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (A00000000000000000000024 /* SolarH9LiveActivity.appex in Embed App Extensions */,);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		B00000000000000000000039 /* OlympiaCloud.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Olympia/OlympiaCloud.swift; sourceTree = "<group>"; };
+		B00000000000000000000030 /* OlympiaTrainingStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Olympia/OlympiaTrainingStore.swift; sourceTree = "<group>"; };
+		B00000000000000000000031 /* OlympiaWorkoutEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Olympia/OlympiaWorkoutEngine.swift; sourceTree = "<group>"; };
+		B00000000000000000000032 /* OlympiaViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Olympia/OlympiaViews.swift; sourceTree = "<group>"; };
+		B00000000000000000000033 /* OlympiaProgramViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Olympia/OlympiaProgramViews.swift; sourceTree = "<group>"; };
+		B00000000000000000000034 /* OlympiaActiveWorkoutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Olympia/OlympiaActiveWorkoutView.swift; sourceTree = "<group>"; };
+		B00000000000000000000035 /* OlympiaHistoryViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Olympia/OlympiaHistoryViews.swift; sourceTree = "<group>"; };
+		B00000000000000000000036 /* OlympiaProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Olympia/OlympiaProgressView.swift; sourceTree = "<group>"; };
+		B00000000000000000000037 /* OlympiaImportExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Olympia/OlympiaImportExport.swift; sourceTree = "<group>"; };
+		B00000000000000000000038 /* OlympiaSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Olympia/OlympiaSettingsView.swift; sourceTree = "<group>"; };
+		B00000000000000000000001 /* SolarH9App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/SolarH9App.swift; sourceTree = "<group>"; };
+		B00000000000000000000002 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/AppModel.swift; sourceTree = "<group>"; };
+		B00000000000000000000003 /* SolarTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem/SolarTheme.swift; sourceTree = "<group>"; };
+		B00000000000000000000004 /* DomainModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Domain/DomainModels.swift; sourceTree = "<group>"; };
+		B00000000000000000000005 /* MetricResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Domain/MetricResult.swift; sourceTree = "<group>"; };
+		B00000000000000000000006 /* Protocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Domain/Protocols.swift; sourceTree = "<group>"; };
+		B00000000000000000000007 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Onboarding/OnboardingView.swift; sourceTree = "<group>"; };
+		B00000000000000000000008 /* RootTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Root/RootTabView.swift; sourceTree = "<group>"; };
+		B00000000000000000000009 /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/TodayView.swift; sourceTree = "<group>"; };
+		B0000000000000000000000A /* LiveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/LiveSession/LiveView.swift; sourceTree = "<group>"; };
+		B0000000000000000000000B /* TrendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Trends/TrendsView.swift; sourceTree = "<group>"; };
+		B0000000000000000000000D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Settings/SettingsView.swift; sourceTree = "<group>"; };
+		B0000000000000000000000E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Resources/Assets.xcassets; sourceTree = "<group>"; };
+		B0000000000000000000000F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Resources/Info.plist; sourceTree = "<group>"; };
+		B00000000000000000000010 /* DomainFoundationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DomainFoundationTests.swift; sourceTree = "<group>"; };
+		B00000000000000000000011 /* SolarH9.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SolarH9.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B00000000000000000000012 /* SolarH9Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SolarH9Tests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B00000000000000000000013 /* HeartRateMeasurementParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Bluetooth/HeartRateMeasurementParser.swift; sourceTree = "<group>"; };
+		B00000000000000000000014 /* ConnectionReducer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Bluetooth/ConnectionReducer.swift; sourceTree = "<group>"; };
+		B00000000000000000000015 /* SimulatedHeartRateSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Bluetooth/SimulatedHeartRateSource.swift; sourceTree = "<group>"; };
+		B00000000000000000000016 /* PolarH9Client.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Bluetooth/PolarH9Client.swift; sourceTree = "<group>"; };
+		B00000000000000000000017 /* SensorPipelineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorPipelineTests.swift; sourceTree = "<group>"; };
+		B00000000000000000000018 /* MetricsEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Domain/MetricsEngine.swift; sourceTree = "<group>"; };
+		B00000000000000000000019 /* PersistenceModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Persistence/PersistenceModels.swift; sourceTree = "<group>"; };
+		B0000000000000000000001A /* RecordingController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Recording/RecordingController.swift; sourceTree = "<group>"; };
+		B0000000000000000000001B /* MetricsEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricsEngineTests.swift; sourceTree = "<group>"; };
+		B0000000000000000000001C /* PersistenceRecordingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceRecordingTests.swift; sourceTree = "<group>"; };
+		B0000000000000000000001D /* ProductServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Product/ProductServices.swift; sourceTree = "<group>"; };
+		B0000000000000000000001E /* SessionSummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Sessions/SessionSummaryView.swift; sourceTree = "<group>"; };
+		B0000000000000000000001F /* FeatureFlags.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Support/FeatureFlags.swift; sourceTree = "<group>"; };
+		B00000000000000000000020 /* SanitizedDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Support/SanitizedDiagnostics.swift; sourceTree = "<group>"; };
+		B00000000000000000000021 /* SanitizedDiagnosticsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SanitizedDiagnosticsTests.swift; sourceTree = "<group>"; };
+		B00000000000000000000022 /* ProductServicesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductServicesTests.swift; sourceTree = "<group>"; };
+		B00000000000000000000023 /* HeartRateActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivity/HeartRateActivityAttributes.swift; sourceTree = "<group>"; };
+		B00000000000000000000024 /* HeartRateLiveActivityController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivity/HeartRateLiveActivityController.swift; sourceTree = "<group>"; };
+		B00000000000000000000025 /* HeartRateLiveActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartRateLiveActivityWidget.swift; sourceTree = "<group>"; };
+		B00000000000000000000026 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B00000000000000000000027 /* SolarH9LiveActivity.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SolarH9LiveActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		B00000000000000000000028 /* SolarZoneLadder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Zones/SolarZoneLadder.swift; sourceTree = "<group>"; };
+		B00000000000000000000029 /* CoachEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Product/CoachEngine.swift; sourceTree = "<group>"; };
+		B0000000000000000000002A /* CoachView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Coach/CoachView.swift; sourceTree = "<group>"; };
+		B0000000000000000000002B /* AppearanceLabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Settings/AppearanceLabView.swift; sourceTree = "<group>"; };
+		B0000000000000000000002C /* ExperienceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperienceTests.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		F00000000000000000000001 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		F00000000000000000000002 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		F00000000000000000000003 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		100000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000002 /* SolarH9 */,
+				100000000000000000000003 /* SolarH9Tests */,
+				100000000000000000000005 /* SolarH9LiveActivity */,
+				100000000000000000000004 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		100000000000000000000002 /* SolarH9 */ = {
+			isa = PBXGroup;
+			children = (
+				B00000000000000000000039 /* OlympiaCloud.swift */,
+				B00000000000000000000030 /* OlympiaTrainingStore.swift */,
+				B00000000000000000000031 /* OlympiaWorkoutEngine.swift */,
+				B00000000000000000000032 /* OlympiaViews.swift */,
+				B00000000000000000000033 /* OlympiaProgramViews.swift */,
+				B00000000000000000000034 /* OlympiaActiveWorkoutView.swift */,
+				B00000000000000000000035 /* OlympiaHistoryViews.swift */,
+				B00000000000000000000036 /* OlympiaProgressView.swift */,
+				B00000000000000000000037 /* OlympiaImportExport.swift */,
+				B00000000000000000000038 /* OlympiaSettingsView.swift */,
+				B00000000000000000000001 /* SolarH9App.swift */,
+				B00000000000000000000002 /* AppModel.swift */,
+				B00000000000000000000003 /* SolarTheme.swift */,
+				B00000000000000000000004 /* DomainModels.swift */,
+				B00000000000000000000005 /* MetricResult.swift */,
+				B00000000000000000000006 /* Protocols.swift */,
+				B00000000000000000000007 /* OnboardingView.swift */,
+				B00000000000000000000008 /* RootTabView.swift */,
+				B00000000000000000000009 /* TodayView.swift */,
+				B0000000000000000000000A /* LiveView.swift */,
+				B0000000000000000000000B /* TrendsView.swift */,
+				B0000000000000000000000D /* SettingsView.swift */,
+				B0000000000000000000000E /* Assets.xcassets */,
+				B0000000000000000000000F /* Info.plist */,
+				B00000000000000000000013 /* HeartRateMeasurementParser.swift */,
+				B00000000000000000000014 /* ConnectionReducer.swift */,
+				B00000000000000000000015 /* SimulatedHeartRateSource.swift */,
+				B00000000000000000000016 /* PolarH9Client.swift */,
+				B00000000000000000000018 /* MetricsEngine.swift */,
+				B00000000000000000000019 /* PersistenceModels.swift */,
+				B0000000000000000000001A /* RecordingController.swift */,
+				B0000000000000000000001D /* ProductServices.swift */,
+				B0000000000000000000001E /* SessionSummaryView.swift */,
+				B0000000000000000000001F /* FeatureFlags.swift */,
+				B00000000000000000000020 /* SanitizedDiagnostics.swift */,
+				B00000000000000000000023 /* HeartRateActivityAttributes.swift */,
+				B00000000000000000000024 /* HeartRateLiveActivityController.swift */,
+				B00000000000000000000028 /* SolarZoneLadder.swift */,
+				B00000000000000000000029 /* CoachEngine.swift */,
+				B0000000000000000000002A /* CoachView.swift */,
+				B0000000000000000000002B /* AppearanceLabView.swift */,
+			);
+			path = SolarH9;
+			sourceTree = "<group>";
+		};
+		100000000000000000000003 /* SolarH9Tests */ = {
+			isa = PBXGroup;
+			children = (B00000000000000000000010 /* DomainFoundationTests.swift */, B00000000000000000000017 /* SensorPipelineTests.swift */, B0000000000000000000001B /* MetricsEngineTests.swift */, B0000000000000000000001C /* PersistenceRecordingTests.swift */, B00000000000000000000021 /* SanitizedDiagnosticsTests.swift */, B00000000000000000000022 /* ProductServicesTests.swift */, B0000000000000000000002C /* ExperienceTests.swift */,);
+			path = SolarH9Tests;
+			sourceTree = "<group>";
+		};
+		100000000000000000000005 /* SolarH9LiveActivity */ = {
+			isa = PBXGroup;
+			children = (
+				B00000000000000000000025 /* HeartRateLiveActivityWidget.swift */,
+				B00000000000000000000026 /* Info.plist */,
+			);
+			path = SolarH9LiveActivity;
+			sourceTree = "<group>";
+		};
+		100000000000000000000004 /* Products */ = {
+			isa = PBXGroup;
+			children = (B00000000000000000000011 /* SolarH9.app */, B00000000000000000000012 /* SolarH9Tests.xctest */, B00000000000000000000027 /* SolarH9LiveActivity.appex */,);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		E00000000000000000000001 /* SolarH9 */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 200000000000000000000001 /* Build configuration list for PBXNativeTarget "SolarH9" */;
+			buildPhases = (300000000000000000000001 /* Sources */, F00000000000000000000001 /* Frameworks */, 400000000000000000000001 /* Resources */, 700000000000000000000001 /* Embed App Extensions */,);
+			buildRules = ();
+			dependencies = (500000000000000000000002 /* PBXTargetDependency */,);
+			name = SolarH9;
+			productName = SolarH9;
+			productReference = B00000000000000000000011 /* SolarH9.app */;
+			productType = "com.apple.product-type.application";
+		};
+		E00000000000000000000002 /* SolarH9Tests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 200000000000000000000002 /* Build configuration list for PBXNativeTarget "SolarH9Tests" */;
+			buildPhases = (300000000000000000000002 /* Sources */, F00000000000000000000002 /* Frameworks */, 400000000000000000000002 /* Resources */,);
+			buildRules = ();
+			dependencies = (500000000000000000000001 /* PBXTargetDependency */,);
+			name = SolarH9Tests;
+			productName = SolarH9Tests;
+			productReference = B00000000000000000000012 /* SolarH9Tests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		E00000000000000000000003 /* SolarH9LiveActivity */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 200000000000000000000004 /* Build configuration list for PBXNativeTarget "SolarH9LiveActivity" */;
+			buildPhases = (300000000000000000000003 /* Sources */, F00000000000000000000003 /* Frameworks */,);
+			buildRules = ();
+			dependencies = ();
+			name = SolarH9LiveActivity;
+			productName = SolarH9LiveActivity;
+			productReference = B00000000000000000000027 /* SolarH9LiveActivity.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		D00000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					E00000000000000000000001 = {CreatedOnToolsVersion = 16.0; };
+					E00000000000000000000002 = {CreatedOnToolsVersion = 16.0; TestTargetID = E00000000000000000000001; };
+					E00000000000000000000003 = {CreatedOnToolsVersion = 16.0; };
+				};
+			};
+			buildConfigurationList = 200000000000000000000003 /* Build configuration list for PBXProject "SolarH9" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (en, Base,);
+			mainGroup = 100000000000000000000001;
+			productRefGroup = 100000000000000000000004 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (E00000000000000000000001 /* SolarH9 */, E00000000000000000000002 /* SolarH9Tests */, E00000000000000000000003 /* SolarH9LiveActivity */,);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		400000000000000000000001 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (A0000000000000000000000E /* Assets.xcassets in Resources */,); runOnlyForDeploymentPostprocessing = 0; };
+		400000000000000000000002 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		300000000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A00000000000000000000039 /* OlympiaCloud.swift in Sources */,
+				A00000000000000000000030 /* OlympiaTrainingStore.swift in Sources */,
+				A00000000000000000000031 /* OlympiaWorkoutEngine.swift in Sources */,
+				A00000000000000000000032 /* OlympiaViews.swift in Sources */,
+				A00000000000000000000033 /* OlympiaProgramViews.swift in Sources */,
+				A00000000000000000000034 /* OlympiaActiveWorkoutView.swift in Sources */,
+				A00000000000000000000035 /* OlympiaHistoryViews.swift in Sources */,
+				A00000000000000000000036 /* OlympiaProgressView.swift in Sources */,
+				A00000000000000000000037 /* OlympiaImportExport.swift in Sources */,
+				A00000000000000000000038 /* OlympiaSettingsView.swift in Sources */,
+				A00000000000000000000001 /* SolarH9App.swift in Sources */,
+				A00000000000000000000002 /* AppModel.swift in Sources */,
+				A00000000000000000000003 /* SolarTheme.swift in Sources */,
+				A00000000000000000000004 /* DomainModels.swift in Sources */,
+				A00000000000000000000005 /* MetricResult.swift in Sources */,
+				A00000000000000000000006 /* Protocols.swift in Sources */,
+				A00000000000000000000007 /* OnboardingView.swift in Sources */,
+				A00000000000000000000008 /* RootTabView.swift in Sources */,
+				A00000000000000000000009 /* TodayView.swift in Sources */,
+				A0000000000000000000000A /* LiveView.swift in Sources */,
+				A0000000000000000000000B /* TrendsView.swift in Sources */,
+				A0000000000000000000000D /* SettingsView.swift in Sources */,
+				A00000000000000000000010 /* HeartRateMeasurementParser.swift in Sources */,
+				A00000000000000000000011 /* ConnectionReducer.swift in Sources */,
+				A00000000000000000000012 /* SimulatedHeartRateSource.swift in Sources */,
+				A00000000000000000000013 /* PolarH9Client.swift in Sources */,
+				A00000000000000000000015 /* MetricsEngine.swift in Sources */,
+				A00000000000000000000016 /* PersistenceModels.swift in Sources */,
+				A00000000000000000000017 /* RecordingController.swift in Sources */,
+				A0000000000000000000001A /* ProductServices.swift in Sources */,
+				A0000000000000000000001B /* SessionSummaryView.swift in Sources */,
+				A0000000000000000000001C /* FeatureFlags.swift in Sources */,
+				A0000000000000000000001D /* SanitizedDiagnostics.swift in Sources */,
+				A00000000000000000000020 /* HeartRateActivityAttributes.swift in Sources */,
+				A00000000000000000000021 /* HeartRateLiveActivityController.swift in Sources */,
+				A00000000000000000000025 /* SolarZoneLadder.swift in Sources */,
+				A00000000000000000000026 /* CoachEngine.swift in Sources */,
+				A00000000000000000000027 /* CoachView.swift in Sources */,
+				A00000000000000000000028 /* AppearanceLabView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		300000000000000000000002 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A0000000000000000000000F /* DomainFoundationTests.swift in Sources */, A00000000000000000000014 /* SensorPipelineTests.swift in Sources */, A00000000000000000000018 /* MetricsEngineTests.swift in Sources */, A00000000000000000000019 /* PersistenceRecordingTests.swift in Sources */, A0000000000000000000001E /* SanitizedDiagnosticsTests.swift in Sources */, A0000000000000000000001F /* ProductServicesTests.swift in Sources */, A00000000000000000000029 /* ExperienceTests.swift in Sources */,); runOnlyForDeploymentPostprocessing = 0; };
+		300000000000000000000003 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A00000000000000000000022 /* HeartRateActivityAttributes.swift in Sources */, A00000000000000000000023 /* HeartRateLiveActivityWidget.swift in Sources */,); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		500000000000000000000001 /* PBXTargetDependency */ = {isa = PBXTargetDependency; target = E00000000000000000000001 /* SolarH9 */; targetProxy = C00000000000000000000001 /* PBXContainerItemProxy */; };
+		500000000000000000000002 /* PBXTargetDependency */ = {isa = PBXTargetDependency; target = E00000000000000000000003 /* SolarH9LiveActivity */; targetProxy = C00000000000000000000002 /* PBXContainerItemProxy */; };
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		600000000000000000000001 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {
+			ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+			ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+			CODE_SIGN_STYLE = Automatic;
+			CURRENT_PROJECT_VERSION = 3;
+			DEVELOPMENT_TEAM = "";
+			GENERATE_INFOPLIST_FILE = NO;
+			INFOPLIST_FILE = SolarH9/Resources/Info.plist;
+			IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+			MARKETING_VERSION = 0.3.0;
+			PRODUCT_BUNDLE_IDENTIFIER = "$(SOLARH9_BUNDLE_ID)";
+			PRODUCT_NAME = "$(TARGET_NAME)";
+			SDKROOT = iphoneos;
+			SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+			SUPPORTS_MACCATALYST = NO;
+			SWIFT_EMIT_LOC_STRINGS = YES;
+			SWIFT_STRICT_CONCURRENCY = complete;
+			SWIFT_VERSION = 6.0;
+			TARGETED_DEVICE_FAMILY = 1;
+		}; name = Debug; };
+		600000000000000000000002 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {
+			ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+			ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+			CODE_SIGN_STYLE = Automatic;
+			CURRENT_PROJECT_VERSION = 3;
+			DEVELOPMENT_TEAM = "";
+			GENERATE_INFOPLIST_FILE = NO;
+			INFOPLIST_FILE = SolarH9/Resources/Info.plist;
+			IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+			MARKETING_VERSION = 0.3.0;
+			PRODUCT_BUNDLE_IDENTIFIER = "$(SOLARH9_BUNDLE_ID)";
+			PRODUCT_NAME = "$(TARGET_NAME)";
+			SDKROOT = iphoneos;
+			SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+			SUPPORTS_MACCATALYST = NO;
+			SWIFT_COMPILATION_MODE = wholemodule;
+			SWIFT_EMIT_LOC_STRINGS = YES;
+			SWIFT_STRICT_CONCURRENCY = complete;
+			SWIFT_VERSION = 6.0;
+			TARGETED_DEVICE_FAMILY = 1;
+			VALIDATE_PRODUCT = YES;
+		}; name = Release; };
+		600000000000000000000003 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {
+			BUNDLE_LOADER = "$(TEST_HOST)";
+			CODE_SIGN_STYLE = Automatic;
+			GENERATE_INFOPLIST_FILE = YES;
+			IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+			PRODUCT_BUNDLE_IDENTIFIER = "$(SOLARH9_BUNDLE_ID).tests";
+			PRODUCT_NAME = "$(TARGET_NAME)";
+			SDKROOT = iphoneos;
+			SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+			SUPPORTS_MACCATALYST = NO;
+			SWIFT_STRICT_CONCURRENCY = complete;
+			SWIFT_VERSION = 6.0;
+			TARGETED_DEVICE_FAMILY = 1;
+			TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SolarH9.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SolarH9";
+		}; name = Debug; };
+		600000000000000000000004 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {
+			BUNDLE_LOADER = "$(TEST_HOST)";
+			CODE_SIGN_STYLE = Automatic;
+			GENERATE_INFOPLIST_FILE = YES;
+			IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+			PRODUCT_BUNDLE_IDENTIFIER = "$(SOLARH9_BUNDLE_ID).tests";
+			PRODUCT_NAME = "$(TARGET_NAME)";
+			SDKROOT = iphoneos;
+			SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+			SUPPORTS_MACCATALYST = NO;
+			SWIFT_STRICT_CONCURRENCY = complete;
+			SWIFT_VERSION = 6.0;
+			TARGETED_DEVICE_FAMILY = 1;
+			TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SolarH9.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SolarH9";
+		}; name = Release; };
+		600000000000000000000005 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {
+			ALWAYS_SEARCH_USER_PATHS = NO;
+			CLANG_ANALYZER_NONNULL = YES;
+			CLANG_ENABLE_MODULES = YES;
+			CLANG_ENABLE_OBJC_ARC = YES;
+			COPY_PHASE_STRIP = NO;
+			DEBUG_INFORMATION_FORMAT = dwarf;
+			ENABLE_TESTABILITY = YES;
+			GCC_C_LANGUAGE_STANDARD = gnu17;
+			GCC_OPTIMIZATION_LEVEL = 0;
+			ONLY_ACTIVE_ARCH = YES;
+			SOLARH9_BUNDLE_ID = com.olympia.app;
+		}; name = Debug; };
+		600000000000000000000006 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {
+			ALWAYS_SEARCH_USER_PATHS = NO;
+			CLANG_ANALYZER_NONNULL = YES;
+			CLANG_ENABLE_MODULES = YES;
+			CLANG_ENABLE_OBJC_ARC = YES;
+			COPY_PHASE_STRIP = NO;
+			DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+			GCC_C_LANGUAGE_STANDARD = gnu17;
+			SOLARH9_BUNDLE_ID = com.olympia.app;
+			SWIFT_OPTIMIZATION_LEVEL = "-O";
+		}; name = Release; };
+		600000000000000000000007 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {
+			APPLICATION_EXTENSION_API_ONLY = YES;
+			CODE_SIGN_STYLE = Automatic;
+			CURRENT_PROJECT_VERSION = 3;
+			GENERATE_INFOPLIST_FILE = NO;
+			INFOPLIST_FILE = SolarH9LiveActivity/Info.plist;
+			IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+			MARKETING_VERSION = 0.3.0;
+			PRODUCT_BUNDLE_IDENTIFIER = "$(SOLARH9_BUNDLE_ID).liveactivity";
+			PRODUCT_NAME = "$(TARGET_NAME)";
+			SDKROOT = iphoneos;
+			SKIP_INSTALL = YES;
+			SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+			SUPPORTS_MACCATALYST = NO;
+			SWIFT_EMIT_LOC_STRINGS = YES;
+			SWIFT_STRICT_CONCURRENCY = complete;
+			SWIFT_VERSION = 6.0;
+			TARGETED_DEVICE_FAMILY = 1;
+		}; name = Debug; };
+		600000000000000000000008 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {
+			APPLICATION_EXTENSION_API_ONLY = YES;
+			CODE_SIGN_STYLE = Automatic;
+			CURRENT_PROJECT_VERSION = 3;
+			GENERATE_INFOPLIST_FILE = NO;
+			INFOPLIST_FILE = SolarH9LiveActivity/Info.plist;
+			IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+			MARKETING_VERSION = 0.3.0;
+			PRODUCT_BUNDLE_IDENTIFIER = "$(SOLARH9_BUNDLE_ID).liveactivity";
+			PRODUCT_NAME = "$(TARGET_NAME)";
+			SDKROOT = iphoneos;
+			SKIP_INSTALL = YES;
+			SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+			SUPPORTS_MACCATALYST = NO;
+			SWIFT_COMPILATION_MODE = wholemodule;
+			SWIFT_EMIT_LOC_STRINGS = YES;
+			SWIFT_STRICT_CONCURRENCY = complete;
+			SWIFT_VERSION = 6.0;
+			TARGETED_DEVICE_FAMILY = 1;
+		}; name = Release; };
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		200000000000000000000001 /* Build configuration list for PBXNativeTarget "SolarH9" */ = {isa = XCConfigurationList; buildConfigurations = (600000000000000000000001 /* Debug */, 600000000000000000000002 /* Release */,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		200000000000000000000002 /* Build configuration list for PBXNativeTarget "SolarH9Tests" */ = {isa = XCConfigurationList; buildConfigurations = (600000000000000000000003 /* Debug */, 600000000000000000000004 /* Release */,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		200000000000000000000003 /* Build configuration list for PBXProject "SolarH9" */ = {isa = XCConfigurationList; buildConfigurations = (600000000000000000000005 /* Debug */, 600000000000000000000006 /* Release */,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		200000000000000000000004 /* Build configuration list for PBXNativeTarget "SolarH9LiveActivity" */ = {isa = XCConfigurationList; buildConfigurations = (600000000000000000000007 /* Debug */, 600000000000000000000008 /* Release */,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+/* End XCConfigurationList section */
+	};
+	rootObject = D00000000000000000000001 /* Project object */;
+}
