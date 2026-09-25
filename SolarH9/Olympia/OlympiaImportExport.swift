@@ -7,7 +7,7 @@ struct OlympiaImportReport {
     var skipped = 0
 }
 
-enum OlympiaNoteImporter {
+@MainActor enum OlympiaNoteImporter {
     static func importWorkouts(_ text: String, into store: OlympiaTrainingStore) -> OlympiaImportReport {
         var report = OlympiaImportReport()
         var title = ""
@@ -103,7 +103,7 @@ struct OlympiaBackup: Codable {
     var programs: [Program]
     var weights: [Weight]
 
-    init(store: OlympiaTrainingStore) {
+    @MainActor init(store: OlympiaTrainingStore) {
         workouts = store.workouts.map { Workout(id: $0.id, name: $0.name, colorHex: $0.colorHex, exercises: $0.exercises) }
         sessions = store.sessions.map { Session(id: $0.id, name: $0.name, startedAt: $0.startedAt,
                                                 endedAt: $0.endedAt, status: $0.status,
