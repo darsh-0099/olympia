@@ -25,6 +25,8 @@ The native app uses separate Supabase accounts. It does not automatically inheri
 
 This Mac currently lacks full Xcode and iOS signing credentials. The project and scripts are prepared, but **no new Olympia IPA has been built or verified**. On a Mac with Xcode 16+ and a configured Apple Developer team, open `SolarH9.xcodeproj`, select the `SolarH9` scheme (the internal scheme name), configure signing and a unique bundle identifier, then archive/export an iOS app.
 
+The private [Olympia GitHub repository](https://github.com/darsh-0099/olympia) has a manual macOS Actions workflow. [Run 1](https://github.com/darsh-0099/olympia/actions/runs/36169083330) reached Swift compilation and found actor-isolation errors in the note importer and backup initializer; those source errors were patched in commit `a44c612`. [Run 2](https://github.com/darsh-0099/olympia/actions/runs/36169545740) was rejected before a runner started because GitHub reported failed account payments or a spending-limit issue. Thus the fix has not yet been compiler-verified and no IPA has been produced. The GitHub account owner must resolve Actions billing to resume hosted builds.
+
 For a non-installable unsigned archive, run `scripts/build_unsigned_ipa.sh`; it outputs `Olympia.ipa`. A signed IPA requires Xcode signing/provisioning. Do not mistake an unsigned archive for something an iPhone can install.
 
 ## Known gaps before release
