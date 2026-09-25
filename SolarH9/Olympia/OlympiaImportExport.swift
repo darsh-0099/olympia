@@ -35,7 +35,7 @@ struct OlympiaImportReport {
                 if title.isEmpty { title = "Workout" }
                 continue
             }
-            guard date != nil else { report.skipped += 1; continue }
+            guard let workoutDate = date else { report.skipped += 1; continue }
             let content = line.replacingOccurrences(of: #"^\d+[.)]\s*"#, with: "", options: .regularExpression)
             let parts = content.components(separatedBy: " - ")
             guard let exercise = parts.first?.trimmingCharacters(in: .whitespaces), !exercise.isEmpty else {
@@ -49,6 +49,10 @@ struct OlympiaImportReport {
                 .components(separatedBy: "/").compactMap { Int($0.trimmingCharacters(in: .whitespaces)) } ?? []
             let fixedReps = firstMatch(#"\b(\d+(?:\.\d+)?)\s*reps?\b"#, in: content.lowercased())
                 .flatMap { Double($0[1]).map { Int($0.rounded()) } }
+            // Notes such as "4 sets - 12 reps (Last set 15)" describe a
+            // different final set; preserving it matters in workout history.
+            let finalSetReps = firstMatch(#"\blast\s+set\s+(\d+(?:\.\d+)?)\b"#, in: content.lowercased())
+                .flatMap { Double($0[1]).map { Int($0.rounded()) } }
             let count = min(20, max(1, explicit ?? (slashReps.isEmpty ? 1 : slashReps.count)))
             let weight = firstMatch(#"(\d+(?:\.\d+)?)\s*(?:lbs?|pounds?|kg)\b"#, in: content.lowercased())
                 .flatMap { Double($0[1]) }
@@ -56,8 +60,9 @@ struct OlympiaImportReport {
             for index in 0..<count {
                 sets.append(OlympiaCompletedSet(exerciseName: exercise, exercisePosition: position - 1,
                                                 setNumber: index + 1, weightPounds: pounds,
-                                                reps: index < slashReps.count ? slashReps[index] : fixedReps,
-                                                restSeconds: 0, completedAt: date!))
+                                                reps: index == count - 1 ? (finalSetReps ?? (index < slashReps.count ? slashReps[index] : fixedReps))
+                                                    : (index < slashReps.count ? slashReps[index] : fixedReps),
+                                                restSeconds: 0, completedAt: workoutDate))
             }
         }
         flush()
