@@ -146,9 +146,10 @@ final class OlympiaTrainingStore: ObservableObject {
     @Published private(set) var weights: [OlympiaBodyWeight] = []
     @Published var errorMessage: String?
 
-    init() throws {
+    init(inMemory: Bool = false) throws {
         container = try ModelContainer(for: OlympiaWorkoutTemplate.self, OlympiaProgram.self,
-                                       OlympiaTrainingSession.self, OlympiaBodyWeight.self)
+                                       OlympiaTrainingSession.self, OlympiaBodyWeight.self,
+                                       configurations: ModelConfiguration(isStoredInMemoryOnly: inMemory))
         context = container.mainContext
         refresh()
     }

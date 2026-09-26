@@ -209,10 +209,21 @@ struct OlympiaActiveWorkoutView: View {
 
     private func endWorkout(cancel: Bool) {
         let draft = engine.session
+        let heartRateSessionID = draft?.heartRateSessionID
         if cancel { engine.cancel() } else { engine.finish() }
         if sensorSessionStarted { Task {
             await sensor.endWorkout(); await productStore.refresh()
-            if !cancel { attachHeartRate(to: draft) }
+            if cancel, let heartRateSessionID {
+                // Stop recording before deleting its persisted samples so a
+                // subsequent checkpoint cannot recreate the discarded data.
+                if !sensor.hasActiveRecording {
+                    if !(await productStore.deleteSession(id: heartRateSessionID)) {
+                        store.errorMessage = "Workout discarded, but its heart-rate recording could not be deleted."
+                    }
+                } else {
+                    store.errorMessage = "Workout discarded. The heart-rate recording still needs to finish saving before it can be deleted."
+                }
+            } else if !cancel { attachHeartRate(to: draft) }
         } }
     }
 

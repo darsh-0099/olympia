@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Verify and unpack reviewed Olympia source
         run: |
-          echo 'bdb5d1d864771caff69370eb1199ca16faa6fd1c81e91b6b4ba4fd88bdb632a8  Olympia-source.zip' | shasum -a 256 -c -
+          echo '92330b89c55ef6fdd95c0e4fc5a98f91385a265c86cd2b60854c1eacce33996b  Olympia-source.zip' | shasum -a 256 -c -
           python3 - <<'PY'
           import zipfile
           from pathlib import PurePosixPath
@@ -45,6 +45,13 @@ jobs:
             CODE_SIGNING_ALLOWED=NO build
       - name: Build unsigned iPhone IPA
         run: bash scripts/build_unsigned_ipa.sh
+      - name: Run regression tests on an available iPhone simulator
+        timeout-minutes: 20
+        run: |
+          DEVICE_ID="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; devices=json.load(sys.stdin)["devices"]; print(next(d["udid"] for group in devices.values() for d in group if d["name"].startswith("iPhone")))')"
+          xcodebuild -project SolarH9.xcodeproj -scheme SolarH9 \
+            -configuration Debug -destination "platform=iOS Simulator,id=$DEVICE_ID" \
+            -resultBundlePath Olympia-tests.xcresult CODE_SIGNING_ALLOWED=NO test
       - name: Record checksum
         run: shasum -a 256 Olympia.ipa > Olympia.sha256
       - name: Upload engineering preview
@@ -55,4 +62,5 @@ jobs:
           path: |
             Olympia.ipa
             Olympia.sha256
+            Olympia-tests.xcresult
           retention-days: 7

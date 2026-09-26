@@ -3,6 +3,51 @@ import XCTest
 
 @MainActor
 final class ExperienceTests: XCTestCase {
+    func testDiscardWorkoutRemovesLoggedSetsAndSession() throws {
+        let store = try OlympiaTrainingStore(inMemory: true)
+        let engine = OlympiaWorkoutEngine(store: store)
+        let workout = OlympiaWorkoutTemplate(name: "Push", exercises: [
+            OlympiaExercise(name: "Bench Press", sets: 3, restSeconds: 90)
+        ])
+        engine.start(workout)
+        engine.beginNow()
+        engine.completeSet(weightPounds: 100, reps: 12)
+        XCTAssertEqual(store.sessions.first?.completedSets.count, 1)
+        engine.cancel()
+        XCTAssertFalse(engine.isActive)
+        XCTAssertTrue(store.sessions.isEmpty)
+        XCTAssertEqual(engine.secondsRemaining, 0)
+    }
+
+    func testFinishWorkoutKeepsPartialSession() throws {
+        let store = try OlympiaTrainingStore(inMemory: true)
+        let engine = OlympiaWorkoutEngine(store: store)
+        engine.start(OlympiaWorkoutTemplate(name: "Push", exercises: [
+            OlympiaExercise(name: "Bench Press", sets: 3, restSeconds: 90)
+        ]))
+        engine.beginNow()
+        engine.completeSet(weightPounds: 100, reps: 12)
+        engine.finish()
+        XCTAssertFalse(engine.isActive)
+        XCTAssertEqual(store.sessions.count, 1)
+        XCTAssertEqual(store.sessions.first?.status, "partial")
+        XCTAssertEqual(store.sessions.first?.completedSets.first?.reps, 12)
+    }
+
+    func testNoteImportPreservesSlashSetsAndFinalSetOverride() throws {
+        let store = try OlympiaTrainingStore(inMemory: true)
+        let report = OlympiaNoteImporter.importWorkouts("""
+        Push 7/28/25:
+        1. Bench Press - 17/15/15 - 85lbs
+        2. Lateral Raises - 4 sets - 12 reps (Last set 15) - 19lbs
+        """, into: store)
+        XCTAssertEqual(report.sets, 7)
+        let sets = try XCTUnwrap(store.sessions.first).completedSets
+        XCTAssertEqual(sets.prefix(3).compactMap(\.reps), [17, 15, 15])
+        XCTAssertEqual(sets.suffix(4).compactMap(\.reps), [12, 12, 12, 15])
+        XCTAssertEqual(sets.prefix(3).compactMap(\.weightPounds), [85, 85, 85])
+    }
+
     func testZoneLadderRepresentsEveryZoneAndTargetRelationship() {
         for zone in 1...5 {
             let snapshot = SolarZoneSnapshot(beatsPerMinute: 80 + zone * 20, currentZone: zone, targetZone: 3)

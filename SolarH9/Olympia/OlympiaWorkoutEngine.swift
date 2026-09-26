@@ -124,10 +124,12 @@ final class OlympiaWorkoutEngine: ObservableObject {
 
     func cancel() {
         guard let session else { return }
-        if session.completedSets.isEmpty { store?.deleteSession(session) }
-        else { finish(); return }
+        // Discard means discard, even when the user has already logged sets.
+        // The separate finish() action preserves partial workouts.
+        store?.deleteSession(session)
         self.session = nil
         ticker?.cancel(); ticker = nil
+        secondsRemaining = 0; elapsedSeconds = 0
     }
 
     func refreshTime() {
