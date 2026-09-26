@@ -5,8 +5,8 @@ struct OlympiaSettingsView: View {
     @ObservedObject var store: OlympiaTrainingStore
     @Environment(\.olympiaColors) private var colors
     @AppStorage("olympia.units") private var units = "lb"
-    @AppStorage("olympia.theme") private var theme = "system"
-    @AppStorage("olympia.accent") private var accent = "sky"
+    @AppStorage("olympia.theme") private var theme = "dark"
+    @AppStorage("olympia.accent") private var accent = "ember"
     @AppStorage("olympia.displayName") private var displayName = ""
     @State private var importKind: ImportKind?
     @State private var showImporter = false
@@ -43,6 +43,7 @@ struct OlympiaSettingsView: View {
                         Text("System").tag("system"); Text("Dark").tag("dark"); Text("Light").tag("light")
                     }
                     Picker("Accent", selection: $accent) {
+                        Text("Ember orange").tag("ember")
                         Text("Sky blue").tag("sky"); Text("Emerald").tag("emerald")
                         Text("Violet").tag("violet"); Text("Sunset").tag("sunset")
                     }
