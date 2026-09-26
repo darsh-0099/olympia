@@ -24,15 +24,17 @@ struct OlympiaImportReport {
         for raw in text.components(separatedBy: .newlines) {
             let line = raw.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !line.isEmpty else { continue }
-            if let found = firstMatch(#"\b(\d{1,2})/(\d{1,2})/(\d{2,4})\b"#, in: line) {
+            // A workout header ends with its date. Exercise rows can contain
+            // date-shaped rep sequences (even valid dates such as 12/10/10).
+            if !line.contains(" - "),
+               firstMatch(#"^\d+[.)]\s*"#, in: line) == nil,
+               let found = firstMatch(#"^(.*?)\b(\d{1,2})/(\d{1,2})/(\d{2}|\d{4})\s*:?$"#, in: line) {
                 flush()
-                let year = Int(found[3]) ?? 0
-                let components = DateComponents(year: year < 100 ? 2000 + year : year,
-                                                month: Int(found[1]), day: Int(found[2]))
-                date = Calendar.current.date(from: components)
-                title = line.replacingOccurrences(of: found[0], with: "")
+                date = strictDate(month: found[2], day: found[3], year: found[4])
+                title = found[1]
                     .trimmingCharacters(in: CharacterSet(charactersIn: " :,-"))
                 if title.isEmpty { title = "Workout" }
+                if date == nil { report.skipped += 1 }
                 continue
             }
             guard let workoutDate = date else { report.skipped += 1; continue }
@@ -76,9 +78,7 @@ struct OlympiaImportReport {
                   let valueParts = firstMatch(#"(\d{2,3}(?:\.\d+)?)\s*(lb|lbs|pounds|kg)\b"#, in: line.lowercased()) else {
                 report.skipped += 1; continue
             }
-            let year = Int(dateParts[3]) ?? 0
-            guard let date = Calendar.current.date(from: DateComponents(year: year < 100 ? 2000 + year : year,
-                                                                        month: Int(dateParts[1]), day: Int(dateParts[2]))),
+            guard let date = strictDate(month: dateParts[1], day: dateParts[2], year: dateParts[3]),
                   let value = Double(valueParts[1]) else { report.skipped += 1; continue }
             if !store.importedWeightExists(on: date) {
                 store.logWeight(value, kilograms: valueParts[2] == "kg", at: date)
@@ -86,6 +86,19 @@ struct OlympiaImportReport {
             }
         }
         return report
+    }
+
+    private static func strictDate(month: String, day: String, year: String) -> Date? {
+        guard let month = Int(month), let day = Int(day), let rawYear = Int(year),
+              year.count == 2 || year.count == 4 else { return nil }
+        let year = rawYear < 100 ? 2000 + rawYear : rawYear
+        let calendar = Calendar(identifier: .gregorian)
+        let components = DateComponents(year: year, month: month, day: day)
+        guard let date = calendar.date(from: components) else { return nil }
+        // Calendar.date(from:) normalizes overflow (for example February 30).
+        let actual = calendar.dateComponents([.year, .month, .day], from: date)
+        guard actual.year == year, actual.month == month, actual.day == day else { return nil }
+        return date
     }
 
     private static func firstMatch(_ pattern: String, in text: String) -> [String]? {

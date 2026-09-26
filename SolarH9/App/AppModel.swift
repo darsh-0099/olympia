@@ -68,6 +68,7 @@ final class SensorCoordinator: ObservableObject {
     private var lastRRMonotonicNanoseconds: UInt64?
     private var sessionHeartRateSum = 0
     private var sessionHeartRateCount = 0
+    private var workoutStartInProgress = false
     private(set) var sessionMinimumHeartRate: Int?
     private(set) var sessionMaximumHeartRate: Int?
     @Published private(set) var liveHeartRatePoints: [HeartRateSampleValue] = []
@@ -245,9 +246,16 @@ final class SensorCoordinator: ObservableObject {
         }
     }
 
-    func startWorkout() async {
+    @discardableResult
+    func startWorkout() async -> UUID? {
+        guard !hasActiveRecording, !workoutStartInProgress else { return nil }
+        workoutStartInProgress = true
+        defer { workoutStartInProgress = false }
         if isMonitoring { await stopMonitoring() }
+        recording?.resetAfterSummary()
         await startSession(purpose: .exerciseSession)
+        guard hasActiveRecording, recording?.draft?.state == .recording else { return nil }
+        return recording?.draft?.id
     }
 
     func configureMaximumHeartRate(_ value: Int?) {
@@ -308,9 +316,22 @@ final class SensorCoordinator: ObservableObject {
         await syncLiveActivity()
     }
 
+    func pauseOrResume(id: UUID) async {
+        guard recording?.draft?.id == id else { return }
+        await pauseOrResume()
+    }
+
     func endWorkout() async {
         await recording?.end(sequence: ingressSequence)
         await finishLiveActivityIfSessionEnded()
+    }
+
+    /// End only the recording owned by the caller. A restored workout can have
+    /// an older persisted recording while another recording is now active.
+    func endWorkout(id: UUID) async -> Bool {
+        guard recording?.draft?.id == id else { return true }
+        await endWorkout()
+        return recording?.draft?.id != id || !hasActiveRecording
     }
 
     func cancelCheckIn() async {

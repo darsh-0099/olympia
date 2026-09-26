@@ -3,6 +3,64 @@ import XCTest
 
 @MainActor
 final class ExperienceTests: XCTestCase {
+    func testConsecutiveWorkoutsUseDistinctRecordingsAndDiscardPreservesPrevious() async throws {
+        let defaults = UserDefaults(suiteName: "test.workout.lifecycle.\(UUID().uuidString)")!
+        let repository = SwiftDataSessionRepository(container: try SolarPersistence.makeContainer(inMemory: true))
+        let recording = RecordingController(repository: repository)
+        let coordinator = SensorCoordinator(sensor: PolarH9Client(defaults: defaults), recording: recording)
+        await coordinator.select(.simulator)
+
+        let firstResult = await coordinator.startWorkout()
+        let firstID = try XCTUnwrap(firstResult)
+        let firstEnded = await coordinator.endWorkout(id: firstID)
+        XCTAssertTrue(firstEnded)
+        let secondResult = await coordinator.startWorkout()
+        let secondID = try XCTUnwrap(secondResult)
+        XCTAssertNotEqual(firstID, secondID)
+        XCTAssertTrue(coordinator.hasActiveRecording)
+        XCTAssertEqual(recording.draft?.id, secondID)
+
+        let secondEnded = await coordinator.endWorkout(id: secondID)
+        XCTAssertTrue(secondEnded)
+        try await repository.deleteSession(id: secondID)
+        let saved = try await repository.sessions(scope: .all)
+        XCTAssertEqual(saved.map(\.id), [firstID])
+    }
+
+    func testWorkoutStartDoesNotAdoptAnExistingRecordingAndScopedEndLeavesItActive() async throws {
+        let defaults = UserDefaults(suiteName: "test.workout.identity.\(UUID().uuidString)")!
+        let repository = SwiftDataSessionRepository(container: try SolarPersistence.makeContainer(inMemory: true))
+        let recording = RecordingController(repository: repository)
+        let coordinator = SensorCoordinator(sensor: PolarH9Client(defaults: defaults), recording: recording)
+        await coordinator.select(.simulator)
+        let activeResult = await coordinator.startWorkout()
+        let activeID = try XCTUnwrap(activeResult)
+
+        let duplicateResult = await coordinator.startWorkout()
+        XCTAssertNil(duplicateResult)
+        let unrelatedEnded = await coordinator.endWorkout(id: UUID())
+        XCTAssertTrue(unrelatedEnded)
+        XCTAssertTrue(coordinator.hasActiveRecording)
+        XCTAssertEqual(recording.draft?.id, activeID)
+
+        await coordinator.pauseOrResume(id: UUID())
+        XCTAssertEqual(recording.status, .recording(activeID))
+        await coordinator.pauseOrResume(id: activeID)
+        XCTAssertEqual(recording.status, .paused(activeID))
+        await coordinator.pauseOrResume(id: UUID())
+        XCTAssertEqual(recording.status, .paused(activeID))
+        await coordinator.pauseOrResume(id: activeID)
+        XCTAssertEqual(recording.status, .recording(activeID))
+
+        // Cleanup does not require a view-local "started" flag or a ready
+        // sensor: a restored paused workout only needs its persisted ID.
+        await coordinator.pauseOrResume()
+        XCTAssertEqual(recording.status, .paused(activeID))
+        let ended = await coordinator.endWorkout(id: activeID)
+        XCTAssertTrue(ended)
+        XCTAssertFalse(coordinator.hasActiveRecording)
+    }
+
     func testDiscardWorkoutRemovesLoggedSetsAndSession() throws {
         let store = try OlympiaTrainingStore(inMemory: true)
         let engine = OlympiaWorkoutEngine(store: store)
@@ -46,6 +104,43 @@ final class ExperienceTests: XCTestCase {
         XCTAssertEqual(sets.prefix(3).compactMap(\.reps), [17, 15, 15])
         XCTAssertEqual(sets.suffix(4).compactMap(\.reps), [12, 12, 12, 15])
         XCTAssertEqual(sets.prefix(3).compactMap(\.weightPounds), [85, 85, 85])
+    }
+
+    func testNoteImportDoesNotTreatDateLookingSlashRepsAsAHeader() throws {
+        let store = try OlympiaTrainingStore(inMemory: true)
+        let report = OlympiaNoteImporter.importWorkouts("""
+        Push 7/28/25:
+        1. Bench Press - 12/10/10 - 85lbs
+        """, into: store)
+        XCTAssertEqual(report.sessions, 1)
+        XCTAssertEqual(report.sets, 3)
+        XCTAssertEqual(store.sessions.count, 1)
+        let session = try XCTUnwrap(store.sessions.first)
+        XCTAssertEqual(session.name, "Push")
+        XCTAssertEqual(session.completedSets.compactMap(\.reps), [12, 10, 10])
+    }
+
+    func testInvalidWorkoutDatesDoNotCreateSessionsOrLeakSetsIntoPriorWorkout() throws {
+        let store = try OlympiaTrainingStore(inMemory: true)
+        let report = OlympiaNoteImporter.importWorkouts("""
+        Push 7/28/25:
+        1. Bench Press - 12/10/10 - 85lbs
+        Invalid February 2/30/25:
+        1. Squat - 8/8/8 - 135lbs
+        Invalid Month 13/1/25:
+        1. Deadlift - 5/5/5 - 185lbs
+        Pull 7/29/25:
+        1. Row - 10/10/10 - 65lbs
+        """, into: store)
+        XCTAssertEqual(report.sessions, 2)
+        XCTAssertEqual(report.sets, 6)
+        XCTAssertEqual(store.sessions.count, 2)
+        XCTAssertEqual(Set(store.sessions.map(\.name)), ["Push", "Pull"])
+        let push = try XCTUnwrap(store.sessions.first { $0.name == "Push" })
+        let pull = try XCTUnwrap(store.sessions.first { $0.name == "Pull" })
+        XCTAssertEqual(push.completedSets.map(\.exerciseName), Array(repeating: "Bench Press", count: 3))
+        XCTAssertEqual(pull.completedSets.map(\.exerciseName), Array(repeating: "Row", count: 3))
+        XCTAssertEqual(push.completedSets.compactMap(\.reps), [12, 10, 10])
     }
 
     func testZoneLadderRepresentsEveryZoneAndTargetRelationship() {

@@ -23,15 +23,15 @@ The native app uses separate Supabase accounts. It does not automatically inheri
 
 ## Build
 
-This Mac currently lacks full Xcode and iOS signing credentials. The project and scripts are prepared, but **no new Olympia IPA has been built or verified**. On a Mac with Xcode 16+ and a configured Apple Developer team, open `SolarH9.xcodeproj`, select the `SolarH9` scheme (the internal scheme name), configure signing and a unique bundle identifier, then archive/export an iOS app.
+This Mac currently lacks full Xcode and iOS signing credentials. Hosted builds can compile and package an unsigned engineering preview. On a Mac with Xcode 16+ and a configured Apple Developer team, open `SolarH9.xcodeproj`, select the `SolarH9` scheme (the internal scheme name), configure signing and a unique bundle identifier, then archive/export an iOS app.
 
-The private [Olympia GitHub repository](https://github.com/darsh-0099/olympia) has a manual macOS Actions workflow. [Run 1](https://github.com/darsh-0099/olympia/actions/runs/36169083330) reached Swift compilation and found actor-isolation errors in the note importer and backup initializer; those source errors were patched in commit `a44c612`. [Run 2](https://github.com/darsh-0099/olympia/actions/runs/36169545740) was rejected before a runner started because GitHub reported failed account payments or a spending-limit issue. Thus the fix has not yet been compiler-verified and no IPA has been produced. The GitHub account owner must resolve Actions billing to resume hosted builds.
+The private [Olympia GitHub repository](https://github.com/darsh-0099/olympia) has a manual macOS Actions workflow. [Run 36216324484](https://github.com/darsh-0099/olympia/actions/runs/36216324484) successfully compiled for the simulator and packaged an unsigned `Olympia.ipa`. Its regression suite had one failing note-import test; all other tests passed. The importer defect is now fixed in source, with the latest changes awaiting hosted verification. The workflow defaults to focused Olympia experience tests to conserve Actions minutes; enable `full_suite` when dispatching to run every regression test.
 
 For a non-installable unsigned archive, run `scripts/build_unsigned_ipa.sh`; it outputs `Olympia.ipa`. A signed IPA requires Xcode signing/provisioning. Do not mistake an unsigned archive for something an iPhone can install.
 
 ## Known gaps before release
 
-- Full Xcode compile, simulator/device QA, hardware HR validation, and signing cannot be completed in the present environment.
+- Latest-source hosted verification is pending. Physical-device QA, hardware HR validation, cloud-sync end-to-end testing, and signed installation remain unverified.
 - Supabase sync is currently manual and snapshot-based; it needs a robust multi-device conflict/deletion strategy before it is safe to market as seamless real-time sync.
 - Native Sign in with Apple, home-widget workout data, and a complete migration from the existing hosted website are not yet connected.
 - The note importer covers common dated workout lines and slash-separated reps; unusual free-form lines should be reviewed after import.

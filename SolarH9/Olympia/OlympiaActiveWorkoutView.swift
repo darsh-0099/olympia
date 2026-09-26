@@ -11,6 +11,8 @@ struct OlympiaActiveWorkoutView: View {
     @State private var reps = ""
     @State private var showEnd = false
     @State private var sensorSessionStarted = false
+    @State private var sensorStartTask: Task<Void, Never>?
+    @State private var isEnding = false
     @State private var showDevicePicker = false
 
     var body: some View {
@@ -40,6 +42,7 @@ struct OlympiaActiveWorkoutView: View {
             prefill()
         }
         .sheet(isPresented: $showDevicePicker) { DevicePickerView() }
+        .disabled(isEnding)
         .confirmationDialog("End workout?", isPresented: $showEnd) {
             Button("Finish and save", role: .destructive) { endWorkout(cancel: false) }
             Button("Discard workout", role: .destructive) { endWorkout(cancel: true) }
@@ -55,9 +58,9 @@ struct OlympiaActiveWorkoutView: View {
                     .font(.caption2.bold()).tracking(1.5).lineLimit(1)
                 Spacer()
                 Button {
-                    if engine.phase == "paused" { engine.resume(); Task { await sensor.pauseOrResume() } }
+                    if engine.phase == "paused" { engine.resume(); pauseOrResumeHeartRate() }
                     else if engine.phase == "working" || engine.phase == "resting" {
-                        engine.pause(); Task { await sensor.pauseOrResume() }
+                        engine.pause(); pauseOrResumeHeartRate()
                     }
                 } label: {
                     Image(systemName: engine.phase == "paused" ? "play.fill" : "pause.fill")
@@ -152,7 +155,8 @@ struct OlympiaActiveWorkoutView: View {
                 engine.completeSet(weightPounds: enteredWeight, reps: Int(reps))
                 prefill()
                 if !engine.isActive { Task {
-                    await sensor.endWorkout(); await productStore.refresh(); attachHeartRate(to: draft)
+                    await sensorStartTask?.value
+                    await finishHeartRate(for: draft, cancel: false)
                 } }
             }
             .buttonStyle(.borderedProminent)
@@ -181,7 +185,7 @@ struct OlympiaActiveWorkoutView: View {
             Image(systemName: "pause.circle.fill").font(.system(size: 90)).foregroundStyle(colors.accent)
             Text("Workout paused").font(.title.bold())
             Text("Your workout and rest clocks are paused.").foregroundStyle(colors.muted)
-            Button("Resume workout") { engine.resume(); Task { await sensor.pauseOrResume() } }
+            Button("Resume workout") { engine.resume(); pauseOrResumeHeartRate() }
                 .buttonStyle(.borderedProminent)
         }.frame(maxWidth: .infinity).padding(.top, 45)
     }
@@ -208,38 +212,52 @@ struct OlympiaActiveWorkoutView: View {
     }
 
     private func endWorkout(cancel: Bool) {
+        guard !isEnding else { return }
+        isEnding = true
         let draft = engine.session
-        let heartRateSessionID = draft?.heartRateSessionID
-        if cancel { engine.cancel() } else { engine.finish() }
-        if sensorSessionStarted { Task {
-            await sensor.endWorkout(); await productStore.refresh()
-            if cancel, let heartRateSessionID {
-                // Stop recording before deleting its persisted samples so a
-                // subsequent checkpoint cannot recreate the discarded data.
-                if !sensor.hasActiveRecording {
-                    if !(await productStore.deleteSession(id: heartRateSessionID)) {
-                        store.errorMessage = "Workout discarded, but its heart-rate recording could not be deleted."
-                    }
-                } else {
-                    store.errorMessage = "Workout discarded. The heart-rate recording still needs to finish saving before it can be deleted."
-                }
-            } else if !cancel { attachHeartRate(to: draft) }
-        } }
+        Task {
+            // Starting a recording checkpoints asynchronously. Wait for its ID
+            // before deleting the training draft or stopping the recording.
+            await sensorStartTask?.value
+            let heartRateSessionID = draft?.heartRateSessionID
+            if cancel { engine.cancel() } else { engine.finish() }
+            await finishHeartRate(for: cancel ? nil : draft, cancel: cancel,
+                                  recordingID: heartRateSessionID)
+        }
+    }
+
+    private func pauseOrResumeHeartRate() {
+        guard let id = engine.session?.heartRateSessionID else { return }
+        Task { await sensor.pauseOrResume(id: id) }
+    }
+
+    private func finishHeartRate(for draft: OlympiaTrainingSession?, cancel: Bool,
+                                 recordingID: UUID? = nil) async {
+        guard let id = recordingID ?? draft?.heartRateSessionID else { return }
+        let ended = await sensor.endWorkout(id: id)
+        if cancel {
+            guard ended else {
+                store.errorMessage = "Workout discarded. The heart-rate recording still needs to finish saving before it can be deleted."
+                return
+            }
+            if !(await productStore.deleteSession(id: id)) {
+                store.errorMessage = "Workout discarded, but its heart-rate recording could not be deleted."
+            }
+        } else {
+            await productStore.refresh()
+            attachHeartRate(to: draft)
+        }
     }
 
     private func beginSensorSessionIfReady() {
-        guard engine.phase == "working", !sensorSessionStarted, sensor.sourceIsReady else { return }
+        guard engine.phase == "working", !isEnding, !sensorSessionStarted,
+              sensor.sourceIsReady, let session = engine.session else { return }
+        // A restored workout already owns its saved ID. Never adopt an
+        // unrelated active recording or overwrite the restored association.
+        guard session.heartRateSessionID == nil, !sensor.hasActiveRecording else { return }
         sensorSessionStarted = true
-        if sensor.hasActiveRecording {
-            if let id = sensor.recording?.draft?.id, let session = engine.session {
-                session.heartRateSessionID = id
-                store.persistSession(session)
-            }
-            return
-        }
-        Task {
-            await sensor.startWorkout()
-            if let id = sensor.recording?.draft?.id, let session = engine.session {
+        sensorStartTask = Task {
+            if let id = await sensor.startWorkout() {
                 session.heartRateSessionID = id
                 store.persistSession(session)
             }
