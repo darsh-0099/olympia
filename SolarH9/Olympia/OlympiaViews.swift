@@ -14,18 +14,19 @@ extension Color {
 struct OlympiaColors {
     let isLight: Bool
     let accent: Color
-    var background: Color { isLight ? Color(olympiaHex: "#F5F2EC") : Color(olympiaHex: "#090A0A") }
-    var surface: Color { isLight ? .white : Color(olympiaHex: "#141515") }
-    var secondarySurface: Color { isLight ? Color(olympiaHex: "#EAE6DF") : Color(olympiaHex: "#202121") }
-    var text: Color { isLight ? Color(olympiaHex: "#20211F") : Color(olympiaHex: "#F5F0E7") }
-    var muted: Color { isLight ? Color(olympiaHex: "#686861") : Color(olympiaHex: "#B2B1AA") }
-    var border: Color { isLight ? Color(olympiaHex: "#DBD7D0") : Color(olympiaHex: "#30312F") }
+    var background: Color { isLight ? Color(olympiaHex: "#F5F5F5") : Color(olympiaHex: "#080808") }
+    var surface: Color { isLight ? .white : Color(olympiaHex: "#171717") }
+    var secondarySurface: Color { isLight ? Color(olympiaHex: "#EAEAEA") : Color(olympiaHex: "#242424") }
+    var text: Color { isLight ? Color(olympiaHex: "#202020") : .white }
+    var muted: Color { isLight ? Color(olympiaHex: "#686868") : Color(olympiaHex: "#939393") }
+    var border: Color { isLight ? Color(olympiaHex: "#DEDEDE") : Color(olympiaHex: "#292929") }
+    static let blue = Color(olympiaHex: "#2697FF")
     static let ember = Color(olympiaHex: "#FF6B2C")
     static let cream = Color(olympiaHex: "#F5F0E7")
 }
 
 private struct OlympiaColorsKey: EnvironmentKey {
-    static let defaultValue = OlympiaColors(isLight: false, accent: OlympiaColors.ember)
+    static let defaultValue = OlympiaColors(isLight: false, accent: OlympiaColors.blue)
 }
 
 extension EnvironmentValues {
@@ -40,8 +41,19 @@ struct OlympiaCard<Content: View>: View {
     @ViewBuilder var content: Content
     var body: some View {
         content.padding(18).frame(maxWidth: .infinity, alignment: .leading)
-            .background(colors.surface, in: RoundedRectangle(cornerRadius: 20))
-            .overlay(RoundedRectangle(cornerRadius: 20).stroke(colors.border, lineWidth: 1))
+            .background(colors.surface, in: RoundedRectangle(cornerRadius: 18))
+            .overlay(RoundedRectangle(cornerRadius: 18).stroke(colors.border, lineWidth: 0.75))
+    }
+}
+
+/// A brief, interruptible response shared by the compact blueprint controls.
+struct OlympiaPressStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .opacity(configuration.isPressed ? 0.78 : 1)
+            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.98 : 1)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.16), value: configuration.isPressed)
     }
 }
 
@@ -54,8 +66,7 @@ struct OlympiaRootView: View {
     @StateObject private var engine: OlympiaWorkoutEngine
     @Environment(\.colorScheme) private var systemScheme
     @AppStorage("olympia.theme") private var theme = "dark"
-    @AppStorage("olympia.accent") private var accent = "ember"
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @AppStorage("olympia.accent") private var accent = "sky"
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var selection = 0
     @State private var showQuickAction = false
@@ -68,13 +79,13 @@ struct OlympiaRootView: View {
 
     private var colors: OlympiaColors {
         let isLight = theme == "light" || (theme == "system" && systemScheme == .light)
-        let accents = ["ember": "#FF6B2C", "sky": "#63C7FF", "emerald": "#63DF86", "violet": "#AD8CFF", "sunset": "#FF9D72"]
-        return OlympiaColors(isLight: isLight, accent: Color(olympiaHex: accents[accent] ?? "#FF6B2C"))
+        let accents = ["ember": "#FF6B2C", "sky": "#2697FF", "emerald": "#63DF86", "violet": "#AD8CFF", "sunset": "#FF9D72"]
+        return OlympiaColors(isLight: isLight, accent: Color(olympiaHex: accents[accent] ?? "#2697FF"))
     }
 
     var body: some View {
         TabView(selection: $selection) {
-            OlympiaHomeView(store: store, engine: engine, onOpenSettings: { selection = 4 },
+            OlympiaHomeView(store: store, engine: engine,
                             onOpenProgram: { selection = 1 }, onQuickAction: { showQuickAction = true })
                 .tabItem { Label("Home", systemImage: "house") }.tag(0)
                 .toolbar(.hidden, for: .tabBar)
@@ -114,40 +125,28 @@ struct OlympiaRootView: View {
     }
 
     private var navigationDock: some View {
-        HStack(spacing: 10) {
-            HStack(spacing: 2) {
-                dockTab("Home", icon: "house.fill", tag: 0)
-                dockTab("Program", icon: "dumbbell.fill", tag: 1)
-                dockTab("Progress", icon: "chart.bar.fill", tag: 3)
-                dockTab("Settings", icon: "gearshape", tag: 4)
+        HStack(spacing: 4) {
+            dockTab("Home", icon: "house.fill", tag: 0)
+            dockTab("Program", icon: "calendar", tag: 1)
+            Button { showQuickAction = true } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 24, weight: .medium)).foregroundStyle(colors.text)
+                    .frame(maxWidth: .infinity).frame(height: 44)
+                    .background(colors.secondarySurface, in: Capsule())
             }
-            .padding(5)
-            .background {
-                Capsule().fill(reduceTransparency ? AnyShapeStyle(colors.surface) : AnyShapeStyle(.ultraThinMaterial))
-            }
-            .overlay(Capsule().stroke(colors.text.opacity(0.16), lineWidth: 1))
-
-            Button {
-                if let workout = store.scheduledWorkouts(on: .now).first { engine.start(workout) }
-                else { selection = 1 }
-            } label: {
-                Image(systemName: "play.fill")
-                    .font(.system(size: 23, weight: .bold)).foregroundStyle(OlympiaColors.ember)
-                    .frame(width: 62, height: 62)
-                    .background(Circle().fill(colors.surface.gradient))
-                    .overlay(Circle().stroke(OlympiaColors.ember.opacity(0.55), lineWidth: 1))
-                    .shadow(color: OlympiaColors.ember.opacity(0.18), radius: 10)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(store.scheduledWorkouts(on: .now).isEmpty ? "Choose a workout" : "Start today's workout")
+            .buttonStyle(OlympiaPressStyle())
+            .accessibilityLabel("Quick actions")
             .contextMenu {
                 Button("Create workout", systemImage: "plus") { quickSheet = .workout }
                 Button("Log body weight", systemImage: "scalemass") { quickSheet = .weight }
                 Button("Connect heart-rate sensor", systemImage: "heart") { quickSheet = .sensor }
             }
+            dockTab("Progress", icon: "chart.bar.fill", tag: 3)
+            dockTab("Settings", icon: "gearshape", tag: 4)
         }
-        .padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 8)
-        .background(LinearGradient(colors: [colors.background.opacity(0), colors.background], startPoint: .top, endPoint: .bottom))
+        .padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 4)
+        .background(colors.background)
+        .overlay(alignment: .top) { Rectangle().fill(colors.border.opacity(0.6)).frame(height: 0.5) }
     }
 
     private func dockTab(_ title: String, icon: String, tag: Int) -> some View {
@@ -160,28 +159,16 @@ struct OlympiaRootView: View {
             }
             .foregroundStyle(selection == tag ? colors.text : colors.muted)
             .frame(maxWidth: .infinity).frame(height: 52)
-            .background(selection == tag ? colors.text.opacity(0.12) : .clear, in: Capsule())
-            .overlay(Capsule().stroke(selection == tag ? colors.text.opacity(0.25) : .clear, lineWidth: 1))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(OlympiaPressStyle())
         .accessibilityLabel(title)
         .accessibilityAddTraits(selection == tag ? .isSelected : [])
     }
 }
 
-private func olympiaDate(_ date: Date) -> String {
-    date.formatted(.dateTime.weekday(.wide).month(.wide).day()).uppercased()
-}
-
-private func olympiaDuration(_ seconds: TimeInterval) -> String {
-    let total = max(0, Int(seconds))
-    return String(format: "%02d:%02d", total / 60, total % 60)
-}
-
 struct OlympiaHomeView: View {
     @ObservedObject var store: OlympiaTrainingStore
     @ObservedObject var engine: OlympiaWorkoutEngine
-    let onOpenSettings: () -> Void
     let onOpenProgram: () -> Void
     let onQuickAction: () -> Void
     @Environment(\.olympiaColors) private var colors
@@ -193,8 +180,9 @@ struct OlympiaHomeView: View {
     @State private var selectedDate = Date()
     @State private var month = Date()
     @State private var selectedSession: OlympiaTrainingSession?
-    @State private var greeting = "Ready to work?"
+    @State private var editingWorkout: OlympiaWorkoutTemplate?
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var todayWorkouts: [OlympiaWorkoutTemplate] { store.scheduledWorkouts(on: .now) }
     private var lastSession: OlympiaTrainingSession? { store.sessions.first { ["completed", "partial", "imported"].contains($0.status) } }
@@ -208,11 +196,10 @@ struct OlympiaHomeView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    workoutHero
-                        .padding(.horizontal, -20)
-
+                    homeHeader
                         VStack(alignment: .leading, spacing: 14) {
                             weekStrip
+                            workoutHero
                             HStack {
                                 Label(streak == 0 ? "No streak yet" : "\(streak) day streak", systemImage: "arrow.up.right")
                                     .font(.caption).foregroundStyle(colors.muted)
@@ -220,7 +207,7 @@ struct OlympiaHomeView: View {
                                 Text("Best: \(bestStreak) days").font(.caption).foregroundStyle(colors.muted)
                             }
                             Button(showCalendar ? "Hide monthly plan  ⌃" : "View monthly plan  ⌄") {
-                                withAnimation(.smooth(duration: 0.4)) { showCalendar.toggle(); selectedDate = .now; month = .now }
+                                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { showCalendar.toggle(); selectedDate = .now; month = .now }
                             }.font(.caption).frame(maxWidth: .infinity).foregroundStyle(colors.muted)
                         }
 
@@ -230,6 +217,8 @@ struct OlympiaHomeView: View {
                             .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity),
                                                     removal: .opacity))
                     }
+
+                    workoutGrid
 
                     HStack(alignment: .firstTextBaseline) {
                         VStack(alignment: .leading, spacing: 4) {
@@ -290,109 +279,152 @@ struct OlympiaHomeView: View {
                     } else {
                         OlympiaCard { Text("Complete or import a workout to build your history.").font(.caption).foregroundStyle(colors.muted) }
                     }
-                }.padding(.horizontal, 20).padding(.bottom, 18)
+                }.padding(.horizontal, 20).padding(.top, 18).padding(.bottom, 18)
             }
+            .scrollIndicators(.hidden)
             .background(colors.background)
             .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showWeightEntry) { OlympiaWeightEntryView(store: store) }
             .sheet(isPresented: $showHistory) { OlympiaHistoryView(store: store) }
             .sheet(item: $selectedSession) { OlympiaSessionDetailView(store: store, session: $0) }
-            .onAppear {
-                let named = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
-                let options = [named.isEmpty ? "Welcome back" : "Welcome back, \(named)",
-                               "Time to work", "Let's get it", "Great workout incoming",
-                               "Nice to see you", "Howdy, partner"]
-                greeting = options.randomElement() ?? "Ready to work?"
-            }
+            .sheet(item: $editingWorkout) { OlympiaWorkoutEditor(store: store, workout: $0) }
         }
     }
 
-    private var workoutHero: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 12) {
-                Button(action: onOpenSettings) {
-                    Image("OlympiaMark").resizable().scaledToFit().frame(width: 44, height: 44)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                }.accessibilityLabel("Open profile and settings")
-                Spacer(minLength: 0)
-                Text(Date.now.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)).uppercased())
-                    .font(.system(size: 11, weight: .medium)).tracking(2.5)
-                    .foregroundStyle(OlympiaColors.cream)
-                Spacer(minLength: 0)
-                Button(action: onQuickAction) {
-                    Image(systemName: "plus").font(.system(size: 19, weight: .medium))
-                        .frame(width: 44, height: 44)
-                        .background(.black.opacity(0.28), in: Circle())
-                        .overlay(Circle().stroke(.white.opacity(0.2), lineWidth: 1))
-                }.foregroundStyle(OlympiaColors.cream).accessibilityLabel("Quick actions")
+    private var homeHeader: some View {
+        HStack(alignment: .center) {
+            VStack(alignment: .leading, spacing: 5) {
+                Text("OLYMPIA").font(.system(size: 10, weight: .bold)).tracking(2.5)
+                    .foregroundStyle(colors.muted)
+                (Text("Hey, ").foregroundColor(colors.text) +
+                 Text(displayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "athlete" : displayName)
+                    .foregroundColor(colors.muted))
+                    .font(.title2.bold())
             }
-            .padding(.top, 12)
+            Spacer()
+            Image("OlympiaMark").resizable().scaledToFit().frame(width: 32, height: 32)
+                .clipShape(RoundedRectangle(cornerRadius: 9))
+                .accessibilityHidden(true)
+        }
+        .padding(.bottom, 4)
+    }
 
-            Text(greeting).font(.caption).foregroundStyle(OlympiaColors.cream.opacity(0.8))
-                .padding(.top, 22)
-
-            Text((todayWorkouts.first?.name ?? "Rest day").uppercased())
-                .font(.custom("AvenirNextCondensed-Heavy", size: dynamicTypeSize.isAccessibilitySize ? 50 : 88, relativeTo: .largeTitle))
-                .tracking(-2)
-                .foregroundStyle(OlympiaColors.cream)
-                .shadow(color: .black.opacity(0.35), radius: 14, x: 0, y: 3)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, 12)
-                .accessibilityAddTraits(.isHeader)
-
-            Text(todayWorkouts.first.map { "\($0.exercises.count) exercises    \($0.exercises.reduce(0) { $0 + $1.sets }) sets" }
-                 ?? "Nothing scheduled. Make space to recover.")
-                .font(.subheadline).foregroundStyle(OlympiaColors.cream)
-                .padding(.top, 14)
-
-            Spacer(minLength: 54)
-
+    private var workoutHero: some View {
+        let isRestDay = todayWorkouts.isEmpty
+        return HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(isRestDay ? "Rest day" : "Training day").font(.headline)
+                Text(isRestDay ? "No workout planned today" : todayWorkouts.map(\.name).joined(separator: " · "))
+                    .font(.caption).lineLimit(2)
+            }
+            Spacer(minLength: 0)
             Button {
                 if let workout = todayWorkouts.first { engine.start(workout) }
                 else { onOpenProgram() }
             } label: {
-                HStack {
-                    Spacer()
-                    Text(todayWorkouts.isEmpty ? "Explore your program" : "Start workout")
-                        .font(.headline)
-                    Spacer()
-                    Image(systemName: "chevron.right").font(.system(size: 17, weight: .medium))
-                }
-                .foregroundStyle(.black)
-                .padding(.horizontal, 22).padding(.vertical, 19)
-                .background(LinearGradient(colors: [OlympiaColors.ember, Color(olympiaHex: "#FF8A46")],
-                                           startPoint: .leading, endPoint: .trailing), in: Capsule())
-                .overlay(Capsule().stroke(Color(olympiaHex: "#FFB16B").opacity(0.7), lineWidth: 1))
-                .shadow(color: OlympiaColors.ember.opacity(0.22), radius: 18, y: 5)
+                Label(isRestDay ? "Plan" : "Start", systemImage: isRestDay ? "plus.circle.fill" : "play.circle.fill")
+                    .font(.caption.bold())
+                    .padding(.horizontal, 14).frame(minHeight: 44)
+                    .background(.black.opacity(0.18), in: Capsule())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(OlympiaPressStyle())
+            .accessibilityLabel(isRestDay ? "Open your program" : "Start today's workout")
             .contextMenu {
-                if !todayWorkouts.isEmpty {
+                if !isRestDay {
                     Button("Postpone plan one day", systemImage: "calendar.badge.clock") { store.postponeRotationOneDay() }
                 }
             }
-            .padding(.bottom, 12)
         }
-        .padding(.horizontal, 22)
-        .frame(minHeight: 460, alignment: .top)
-        .background {
-            GeometryReader { geometry in
-                Image("OlympiaMatterhorn").resizable().scaledToFill()
-                    .frame(width: geometry.size.width, height: geometry.size.height)
-                    .clipped()
-                    .overlay(LinearGradient(stops: [.init(color: .black.opacity(0.55), location: 0),
-                                                   .init(color: .black.opacity(0.48), location: 0.42),
-                                                   .init(color: .black.opacity(0.65), location: 1)],
-                                            startPoint: .top, endPoint: .bottom))
-                    .overlay(LinearGradient(colors: [.black.opacity(0.42), .clear], startPoint: .leading, endPoint: .trailing))
-                    // Keep the photograph dark behind cream text in every theme;
-                    // only the button's bottom edge fades into the page background.
-                    .overlay(alignment: .bottom) {
-                        LinearGradient(colors: [.clear, colors.background], startPoint: .top, endPoint: .bottom)
-                            .frame(height: 64)
+        .foregroundStyle(isRestDay ? Color.white : Color(olympiaHex: "#382618"))
+        .padding(16)
+        .frame(maxWidth: .infinity, minHeight: 84, alignment: .leading)
+        .background(LinearGradient(
+            colors: isRestDay ? [Color(olympiaHex: "#666CE3"), Color(olympiaHex: "#9690EC")] :
+                [Color(olympiaHex: "#F4BD68"), Color(olympiaHex: "#E995A0")],
+            startPoint: .leading, endPoint: .trailing), in: RoundedRectangle(cornerRadius: 17))
+    }
+
+    private var workoutGrid: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Rectangle().fill(colors.border).frame(height: 0.5).padding(.vertical, 4)
+            HStack {
+                Text("Workouts").font(.headline).foregroundStyle(colors.text)
+                Spacer()
+                Button("Manage", action: onOpenProgram).font(.caption.bold()).foregroundStyle(colors.muted)
+                    .frame(minHeight: 44)
+            }
+            if store.workouts.isEmpty {
+                OlympiaCard {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Make room for your first workout.").font(.subheadline.bold()).foregroundStyle(colors.text)
+                        Text("Create a routine, plan your week, and track every set.").font(.caption).foregroundStyle(colors.muted)
+                        Button("Create workout", action: onQuickAction).font(.subheadline.bold()).foregroundStyle(colors.accent)
+                            .frame(minHeight: 44)
                     }
-            }.accessibilityHidden(true)
+                }
+            } else {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10),
+                                         count: dynamicTypeSize.isAccessibilitySize ? 1 : 2), spacing: 10) {
+                    ForEach(store.workouts) { workout in
+                        workoutTile(workout)
+                    }
+                }
+            }
+        }
+    }
+
+    private func workoutTile(_ workout: OlympiaWorkoutTemplate) -> some View {
+        let tint = Color(olympiaHex: workout.colorHex)
+        let session = store.sessions.first { $0.workoutID == workout.id && ["completed", "partial", "imported"].contains($0.status) }
+        let sets = session?.completedSets ?? []
+        let maxReps = sets.compactMap(\.reps).max()
+        let maxWeight = sets.compactMap(\.weightPounds).max()
+        return Button { editingWorkout = workout } label: {
+            VStack(alignment: .leading, spacing: 9) {
+                Text(workout.name).font(.subheadline.bold()).foregroundStyle(tint)
+                    .lineLimit(2).frame(minHeight: 20, alignment: .topLeading)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Last session").font(.system(size: 10)).foregroundStyle(colors.muted)
+                    if let session {
+                        Label(session.startedAt.formatted(.dateTime.month(.abbreviated).day()), systemImage: "calendar")
+                            .font(.caption2).foregroundStyle(colors.muted)
+                        Text(sets.isEmpty ? "No sets recorded" : sets.compactMap(\.reps).map(String.init).joined(separator: " · "))
+                            .font(.caption2).foregroundStyle(colors.muted).lineLimit(1)
+                    } else {
+                        Text("Not started yet").font(.caption2).foregroundStyle(colors.muted)
+                        Text("\(workout.exercises.count) exercises · \(workout.exercises.reduce(0) { $0 + $1.sets }) sets")
+                            .font(.caption2).foregroundStyle(colors.muted).lineLimit(1)
+                    }
+                }
+                HStack(spacing: 8) {
+                    tileMetric("\(sets.count)", label: "sets", tint: tint)
+                    tileMetric(maxReps.map(String.init) ?? "—", label: "max reps", tint: tint)
+                    tileMetric(maxWeight.map { String(format: "%.0f", units == "kg" ? $0 / 2.2046226218 : $0) } ?? "—",
+                               label: units, tint: tint)
+                    Spacer(minLength: 0)
+                    Image(systemName: "ellipsis.circle").foregroundStyle(colors.muted).font(.caption)
+                }.padding(.top, 3)
+            }
+            .padding(14).frame(maxWidth: .infinity, minHeight: 154, alignment: .topLeading)
+            .background(colors.surface, in: RoundedRectangle(cornerRadius: 17))
+            .overlay(RoundedRectangle(cornerRadius: 17).stroke(colors.border, lineWidth: 0.75))
+            .contentShape(RoundedRectangle(cornerRadius: 17))
+        }
+        .buttonStyle(OlympiaPressStyle())
+        .accessibilityLabel("\(workout.name). \(sets.count) sets in last session. Edit workout.")
+        .contextMenu {
+            Button("Start workout", systemImage: "play.fill") { engine.start(workout) }
+            Button("Edit workout", systemImage: "pencil") { editingWorkout = workout }
+            if let session {
+                Button("View last session", systemImage: "clock") { selectedSession = session }
+            }
+        }
+    }
+
+    private func tileMetric(_ value: String, label: String, tint: Color) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(value).font(.system(size: 13, weight: .bold)).monospacedDigit().foregroundStyle(colors.text)
+            Text(label).font(.system(size: 8, weight: .medium)).foregroundStyle(tint)
         }
     }
 
@@ -409,15 +441,26 @@ struct OlympiaHomeView: View {
         return HStack(spacing: 6) {
             ForEach(0..<7, id: \.self) { offset in
                 let date = calendar.date(byAdding: .day, value: offset, to: monday) ?? today
-                VStack(spacing: 6) {
-                    Text(date.formatted(.dateTime.weekday(.narrow))).font(.caption2).foregroundStyle(colors.muted)
-                    Text("\(calendar.component(.day, from: date))")
-                        .font(.body).frame(maxWidth: .infinity).frame(height: 42)
-                        .background(completedDays.contains(date) ? colors.accent.opacity(0.2) : .clear,
-                                    in: Circle())
-                        .foregroundStyle(colors.text)
-                        .overlay(Circle().stroke(calendar.isDateInToday(date) ? colors.accent : .clear, lineWidth: 1.5))
+                Button {
+                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) {
+                        selectedDate = date; month = date; showCalendar = true
+                    }
+                } label: {
+                    VStack(spacing: 4) {
+                        Text("\(calendar.component(.day, from: date))")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(calendar.isDateInToday(date) ? colors.text : colors.muted)
+                        Text(date.formatted(.dateTime.weekday(.abbreviated)).uppercased())
+                            .font(.system(size: 8, weight: .medium)).foregroundStyle(colors.muted)
+                        Circle().fill(completedDays.contains(date) ? colors.accent :
+                                      (store.scheduledWorkouts(on: date).first.map { Color(olympiaHex: $0.colorHex) } ?? .clear))
+                            .frame(width: 4, height: 4)
+                    }
+                    .frame(maxWidth: .infinity).frame(height: 54)
+                    .background(calendar.isDateInToday(date) ? colors.secondarySurface : .clear,
+                                in: RoundedRectangle(cornerRadius: 12))
                 }
+                .buttonStyle(OlympiaPressStyle())
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(date.formatted(date: .complete, time: .omitted))
                 .accessibilityValue((calendar.isDateInToday(date) ? "Today. " : "") + (completedDays.contains(date) ? "Workout completed" : ""))

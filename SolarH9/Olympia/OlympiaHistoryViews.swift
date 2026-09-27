@@ -7,6 +7,7 @@ struct OlympiaMonthCalendar: View {
     @Binding var selectedDate: Date
     @Binding var selectedSession: OlympiaTrainingSession?
     @Environment(\.olympiaColors) private var colors
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var first: Date { Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: month)) ?? month }
     private var dayCount: Int { Calendar.current.range(of: .day, in: .month, for: month)?.count ?? 30 }
@@ -19,11 +20,13 @@ struct OlympiaMonthCalendar: View {
         OlympiaCard {
             VStack(spacing: 14) {
                 HStack {
-                    Button { changeMonth(-1) } label: { Image(systemName: "chevron.left") }
+                    Button { changeMonth(-1) } label: { Image(systemName: "chevron.left").frame(width: 44, height: 44) }
+                        .accessibilityLabel("Previous month")
                     Spacer()
                     Text(month.formatted(.dateTime.month(.wide).year())).font(.subheadline.bold()).foregroundStyle(colors.text)
                     Spacer()
-                    Button { changeMonth(1) } label: { Image(systemName: "chevron.right") }
+                    Button { changeMonth(1) } label: { Image(systemName: "chevron.right").frame(width: 44, height: 44) }
+                        .accessibilityLabel("Next month")
                 }
                 HStack {
                     ForEach(["S", "M", "T", "W", "T", "F", "S"].indices, id: \.self) { index in
@@ -38,7 +41,9 @@ struct OlympiaMonthCalendar: View {
                             let date = Calendar.current.date(byAdding: .day, value: index - offset, to: first) ?? first
                             let planned = store.scheduledWorkouts(on: date)
                             let done = store.sessions.contains { Calendar.current.isDate($0.startedAt, inSameDayAs: date) }
-                            Button { selectedDate = date } label: {
+                            Button {
+                                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.16)) { selectedDate = date }
+                            } label: {
                                 VStack(spacing: 4) {
                                     Text("\(index - offset + 1)").font(.caption.bold()).foregroundStyle(colors.text)
                                     HStack(spacing: 2) {
@@ -48,10 +53,12 @@ struct OlympiaMonthCalendar: View {
                                         if done { Circle().fill(colors.accent).frame(width: 4, height: 4) }
                                     }.frame(height: 4)
                                 }.frame(maxWidth: .infinity).frame(height: 44)
-                                    .background(colors.secondarySurface, in: RoundedRectangle(cornerRadius: 8))
-                                    .overlay(RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Calendar.current.isDate(date, inSameDayAs: selectedDate) ? colors.accent : .clear, lineWidth: 2))
-                            }.buttonStyle(.plain)
+                                    .background(Calendar.current.isDate(date, inSameDayAs: selectedDate) ? colors.secondarySurface : .clear,
+                                                in: Capsule())
+                            }.buttonStyle(OlympiaPressStyle())
+                                .accessibilityLabel(date.formatted(date: .complete, time: .omitted))
+                                .accessibilityValue(done ? "Workout completed" : planned.isEmpty ? "Rest day" : "Workout planned")
+                                .accessibilityAddTraits(Calendar.current.isDate(date, inSameDayAs: selectedDate) ? .isSelected : [])
                         }
                     }
                 }
@@ -77,6 +84,8 @@ struct OlympiaMonthCalendar: View {
                 }.frame(maxWidth: .infinity, alignment: .leading)
             }
         }
+        .buttonStyle(OlympiaPressStyle())
+        .tint(colors.muted)
         .gesture(DragGesture(minimumDistance: 35).onEnded { value in
             if value.translation.width < -45 { changeMonth(1) }
             if value.translation.width > 45 { changeMonth(-1) }
@@ -84,13 +93,16 @@ struct OlympiaMonthCalendar: View {
     }
 
     private func changeMonth(_ delta: Int) {
-        if let date = Calendar.current.date(byAdding: .month, value: delta, to: first) { month = date }
+        if let date = Calendar.current.date(byAdding: .month, value: delta, to: first) {
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.16)) { month = date }
+        }
     }
 }
 
 struct OlympiaHistoryView: View {
     @ObservedObject var store: OlympiaTrainingStore
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.olympiaColors) private var colors
     @State private var selected: OlympiaTrainingSession?
 
     var body: some View {
@@ -100,22 +112,42 @@ struct OlympiaHistoryView: View {
                     Button { selected = session } label: {
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(session.name).font(.headline)
+                                Text(session.name).font(.subheadline.bold()).foregroundStyle(colors.text)
                                 Text(session.startedAt.formatted(date: .abbreviated, time: .shortened))
-                                    .font(.caption).foregroundStyle(.secondary)
+                                    .font(.caption).foregroundStyle(colors.muted)
                             }
                             Spacer()
-                            Text("\(session.completedSets.count) sets").font(.caption)
+                            Text("\(session.completedSets.count) sets").font(.caption.bold())
+                                .foregroundStyle(colors.accent).padding(.horizontal, 10).padding(.vertical, 7)
+                                .background(colors.secondarySurface, in: Capsule())
                         }
                     }
                 }.onDelete { indices in
                     let visible = store.sessions.filter { !["preparing", "working", "resting", "paused"].contains($0.status) }
                     indices.forEach { store.deleteSession(visible[$0]) }
                 }
+                .listRowBackground(colors.surface)
+                .listRowSeparatorTint(colors.border)
             }.navigationTitle("Workout history")
+                .navigationBarTitleDisplayMode(.inline)
+                .listStyle(.insetGrouped)
+                .scrollContentBackground(.hidden)
+                .scrollIndicators(.hidden)
+                .background(colors.background)
+                .overlay {
+                    if store.sessions.filter({ !["preparing", "working", "resting", "paused"].contains($0.status) }).isEmpty {
+                        ContentUnavailableView("No workouts yet", systemImage: "calendar",
+                                               description: Text("Completed workouts will appear here."))
+                            .foregroundStyle(colors.muted)
+                    }
+                }
                 .toolbar { Button("Done") { dismiss() } }
                 .sheet(item: $selected) { OlympiaSessionDetailView(store: store, session: $0) }
         }
+        .tint(colors.accent)
+        .presentationBackground(colors.background)
+        .presentationCornerRadius(24)
+        .preferredColorScheme(colors.isLight ? .light : .dark)
     }
 }
 
@@ -124,6 +156,7 @@ struct OlympiaSessionDetailView: View {
     @EnvironmentObject private var productStore: ProductStore
     let session: OlympiaTrainingSession
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.olympiaColors) private var colors
     @AppStorage("olympia.units") private var units = "lb"
     @State private var confirmDelete = false
 
@@ -148,6 +181,7 @@ struct OlympiaSessionDetailView: View {
                         LabeledContent("Average heart rate", value: "\(Int(average.rounded())) bpm")
                     }
                 }
+                .listRowBackground(colors.surface)
                 ForEach(names, id: \.self) { name in
                     DisclosureGroup {
                         ForEach(session.completedSets.filter { $0.exerciseName == name }) { set in
@@ -169,41 +203,80 @@ struct OlympiaSessionDetailView: View {
                     .swipeActions(edge: .trailing) {
                         Button("Delete", role: .destructive) { store.deleteExercise(name, from: session) }
                     }
+                    .listRowBackground(colors.surface)
                 }
                 Section {
                     Button("Delete entire workout", role: .destructive) { confirmDelete = true }
                 }
+                .listRowBackground(colors.surface)
             }.navigationTitle(session.name)
+                .navigationBarTitleDisplayMode(.inline)
+                .listStyle(.insetGrouped)
+                .scrollContentBackground(.hidden)
+                .scrollIndicators(.hidden)
+                .listRowSeparatorTint(colors.border)
+                .foregroundStyle(colors.text)
+                .background(colors.background)
                 .toolbar { Button("Done") { dismiss() } }
                 .confirmationDialog("Delete this workout and all its sets?", isPresented: $confirmDelete) {
                     Button("Delete workout", role: .destructive) { store.deleteSession(session); dismiss() }
                 }
         }
+        .tint(colors.accent)
+        .presentationBackground(colors.background)
+        .presentationCornerRadius(24)
+        .preferredColorScheme(colors.isLight ? .light : .dark)
     }
 }
 
 struct OlympiaWeightEntryView: View {
     @ObservedObject var store: OlympiaTrainingStore
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.olympiaColors) private var colors
     @AppStorage("olympia.units") private var units = "lb"
     @State private var value = ""
     @State private var date = Date()
 
     var body: some View {
         NavigationStack {
-            Form {
-                TextField("Body weight (\(units))", text: $value).keyboardType(.decimalPad)
-                DatePicker("Date", selection: $date, in: ...Date(), displayedComponents: .date)
-            }.navigationTitle("Log body weight")
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    Text("Body weight").font(.title2.bold())
+                    OlympiaCard {
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Weight (\(units))").font(.caption).foregroundStyle(colors.muted)
+                            TextField("0.0", text: $value).keyboardType(.decimalPad)
+                                .font(.system(size: 32, weight: .bold)).monospacedDigit()
+                                .padding(.horizontal, 18).padding(.vertical, 12)
+                                .background(colors.secondarySurface, in: Capsule())
+                                .accessibilityLabel("Body weight in \(units)")
+                            DatePicker("Date", selection: $date, in: ...Date(), displayedComponents: .date)
+                                .font(.subheadline)
+                        }
+                    }
+                    Button {
+                        if let number = Double(value) { store.logWeight(number, kilograms: units == "kg", at: date) }
+                        dismiss()
+                    } label: {
+                        Text("Save weight").font(.subheadline.bold()).foregroundStyle(.white)
+                            .frame(maxWidth: .infinity).frame(height: 50)
+                            .background(colors.accent, in: Capsule())
+                    }.buttonStyle(OlympiaPressStyle()).disabled(Double(value) == nil)
+                        .opacity(Double(value) == nil ? 0.45 : 1)
+                }.padding(20)
+            }.scrollIndicators(.hidden)
+                .scrollDismissesKeyboard(.interactively)
+                .foregroundStyle(colors.text)
+                .background(colors.background)
+                .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Save") {
-                            if let number = Double(value) { store.logWeight(number, kilograms: units == "kg", at: date) }
-                            dismiss()
-                        }.disabled(Double(value) == nil)
-                    }
                 }
         }
+        .tint(colors.accent)
+        .presentationBackground(colors.background)
+        .presentationCornerRadius(24)
+        .presentationDragIndicator(.visible)
+        .preferredColorScheme(colors.isLight ? .light : .dark)
     }
 }

@@ -1,11 +1,14 @@
 import SwiftUI
 
 struct OlympiaActiveWorkoutView: View {
+    private enum EntryField: Hashable { case weight, reps }
     @ObservedObject var store: OlympiaTrainingStore
     @ObservedObject var engine: OlympiaWorkoutEngine
     @EnvironmentObject private var sensor: SensorCoordinator
     @EnvironmentObject private var productStore: ProductStore
     @Environment(\.olympiaColors) private var colors
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @FocusState private var entryFocused: EntryField?
     @AppStorage("olympia.units") private var units = "lb"
     @State private var weight = ""
     @State private var reps = ""
@@ -15,10 +18,17 @@ struct OlympiaActiveWorkoutView: View {
     @State private var isEnding = false
     @State private var showDevicePicker = false
 
+    private var workoutColor: Color {
+        guard let workout = store.workouts.first(where: { $0.id == engine.session?.workoutID }) else {
+            return colors.accent
+        }
+        return Color(olympiaHex: workout.colorHex)
+    }
+
     var body: some View {
         GeometryReader { geometry in
             ScrollView {
-                VStack(spacing: 23) {
+                VStack(spacing: 20) {
                     header
                     if engine.phase == "preparing" { preparation }
                     else if engine.phase == "resting" { rest }
@@ -27,12 +37,23 @@ struct OlympiaActiveWorkoutView: View {
                 }
                 .frame(maxWidth: 600)
                 .frame(maxWidth: .infinity)
-                .frame(minHeight: geometry.size.height, alignment: .top)
+                .frame(minHeight: max(0, geometry.size.height - 40), alignment: .top)
                 .padding(20)
             }
+            .scrollIndicators(.hidden).scrollDismissesKeyboard(.interactively)
             .background(colors.background.ignoresSafeArea())
         }
+        .safeAreaInset(edge: .bottom, spacing: 0) { actionFooter }
+        .foregroundStyle(colors.text)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: engine.phase)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") { entryFocused = nil }
+            }
+        }
         .onChange(of: engine.phase) { _, phase in
+            if phase != "working" { entryFocused = nil }
             if phase == "working" { beginSensorSessionIfReady() }
             if phase == "working" { prefill() }
         }
@@ -50,12 +71,20 @@ struct OlympiaActiveWorkoutView: View {
     }
 
     private var header: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 16) {
             HStack {
-                Button("End") { showEnd = true }.buttonStyle(.bordered)
+                Text(engine.session?.name ?? "Workout")
+                    .font(.headline).foregroundStyle(workoutColor).lineLimit(2)
                 Spacer()
-                Text(engine.session?.name.uppercased() ?? "WORKOUT")
-                    .font(.caption2.bold()).tracking(1.5).lineLimit(1)
+                Label(String(format: "%02d:%02d", engine.elapsedSeconds / 60, engine.elapsedSeconds % 60), systemImage: "clock")
+                    .font(.subheadline.bold()).monospacedDigit().accessibilityLabel("Total workout time")
+                    .accessibilityValue("\(engine.elapsedSeconds / 60) minutes, \(engine.elapsedSeconds % 60) seconds")
+            }
+            HStack {
+                Button("End workout") { showEnd = true }
+                    .font(.caption.bold()).foregroundStyle(colors.muted)
+                    .padding(.horizontal, 14).frame(minHeight: 44)
+                    .background(colors.secondarySurface, in: Capsule()).buttonStyle(OlympiaPressStyle())
                 Spacer()
                 Button {
                     if engine.phase == "paused" { engine.resume(); pauseOrResumeHeartRate() }
@@ -64,12 +93,12 @@ struct OlympiaActiveWorkoutView: View {
                     }
                 } label: {
                     Image(systemName: engine.phase == "paused" ? "play.fill" : "pause.fill")
-                }.buttonStyle(.bordered)
+                        .font(.subheadline.bold()).frame(width: 44, height: 44)
+                        .background(colors.secondarySurface, in: Circle())
+                }.buttonStyle(OlympiaPressStyle())
+                    .accessibilityLabel(engine.phase == "paused" ? "Resume workout" : "Pause workout")
                     .disabled(engine.phase == "preparing")
             }
-            Text(String(format: "%02d:%02d", engine.elapsedSeconds / 60, engine.elapsedSeconds % 60))
-                .font(.system(size: 62, weight: .bold, design: .rounded)).monospacedDigit()
-            Text("TOTAL TIME").font(.caption2.bold()).tracking(2).foregroundStyle(colors.muted)
             if let bpm = sensor.currentHeartRate, sensor.selectedSource != .simulator {
                 HStack(spacing: 7) {
                     Label("\(bpm) bpm", systemImage: "heart.fill")
@@ -113,8 +142,6 @@ struct OlympiaActiveWorkoutView: View {
                     }
                 }
             }
-            Button("Start now") { engine.beginNow() }
-                .buttonStyle(.borderedProminent).frame(maxWidth: .infinity)
         }
     }
 
@@ -128,40 +155,39 @@ struct OlympiaActiveWorkoutView: View {
             ProgressView(value: engine.progress).tint(colors.accent)
             OlympiaCard {
                 VStack(alignment: .leading, spacing: 15) {
-                    Text("CURRENT EXERCISE").font(.caption2.bold()).tracking(1.5).foregroundStyle(colors.muted)
                     Text(engine.currentExercise?.name ?? "Workout complete")
-                        .font(.title2.bold()).foregroundStyle(colors.text)
-                    Text("Set \(engine.session?.setNumber ?? 1) of \(engine.currentExercise?.sets ?? 1)")
-                        .font(.subheadline).foregroundStyle(colors.accent)
+                        .font(.title2.bold()).foregroundStyle(workoutColor)
+                    HStack {
+                        Label("\(engine.currentExercise?.restSeconds ?? 90)s rest", systemImage: "timer")
+                        Spacer()
+                        Text("Set \(engine.session?.setNumber ?? 1) of \(engine.currentExercise?.sets ?? 1)")
+                    }.font(.caption.bold()).foregroundStyle(colors.muted)
                     if let exercise = engine.currentExercise,
                        let previous = store.previousSet(exercise: exercise.name,
                                                         setNumber: engine.session?.setNumber ?? 1) {
                         Text("Previous: \(previous.weightPounds.map { String(format: "%.0f", units == "kg" ? $0 / 2.2046226218 : $0) } ?? "BW") \(units) × \(previous.reps.map(String.init) ?? "—") reps")
                             .font(.caption.bold()).foregroundStyle(colors.accent)
                     }
-                    HStack {
-                        TextField("Weight (\(units))", text: $weight).keyboardType(.decimalPad)
-                            .textFieldStyle(.roundedBorder)
-                        TextField("Reps", text: $reps).keyboardType(.numberPad)
-                            .textFieldStyle(.roundedBorder)
+                    HStack(spacing: 10) {
+                        VStack(spacing: 8) {
+                            Text("Reps").font(.caption2).foregroundStyle(colors.muted)
+                            TextField("—", text: $reps).keyboardType(.numberPad)
+                                .focused($entryFocused, equals: .reps).multilineTextAlignment(.center)
+                                .padding(.vertical, 14).background(colors.secondarySurface, in: Capsule())
+                                .accessibilityLabel("Completed repetitions")
+                        }
+                        VStack(spacing: 8) {
+                            Text("Weight (\(units))").font(.caption2).foregroundStyle(colors.muted)
+                            TextField("—", text: $weight).keyboardType(.decimalPad)
+                                .focused($entryFocused, equals: .weight).multilineTextAlignment(.center)
+                                .padding(.vertical, 14).background(colors.secondarySurface, in: Capsule())
+                                .accessibilityLabel("Completed weight in \(units)")
+                        }
                     }
                     Text("Enter what you completed, then rest begins.")
                         .font(.caption2).foregroundStyle(colors.muted)
                 }
             }
-            Button("Complete set \(engine.session?.setNumber ?? 1)") {
-                let draft = engine.session
-                let enteredWeight = Double(weight).map { units == "kg" ? $0 * 2.2046226218 : $0 }
-                engine.completeSet(weightPounds: enteredWeight, reps: Int(reps))
-                prefill()
-                if !engine.isActive { Task {
-                    await sensorStartTask?.value
-                    await finishHeartRate(for: draft, cancel: false)
-                } }
-            }
-            .buttonStyle(.borderedProminent)
-            .frame(maxWidth: .infinity)
-            .disabled(Double(weight) == nil && Int(reps) == nil)
         }
     }
 
@@ -172,11 +198,14 @@ struct OlympiaActiveWorkoutView: View {
             Text("Next: \(engine.currentExercise?.name ?? "Exercise") · Set \(engine.session?.setNumber ?? 1)")
                 .font(.subheadline).foregroundStyle(colors.muted)
             HStack {
-                Button("−15 sec") { engine.adjustRest(by: -15) }.buttonStyle(.bordered)
-                Button("+15 sec") { engine.adjustRest(by: 15) }.buttonStyle(.bordered)
+                Button("−15 sec") { engine.adjustRest(by: -15) }
+                    .padding(.horizontal, 20).frame(minHeight: 44)
+                    .background(colors.secondarySurface, in: Capsule())
+                Button("+15 sec") { engine.adjustRest(by: 15) }
+                    .padding(.horizontal, 20).frame(minHeight: 44)
+                    .background(colors.secondarySurface, in: Capsule())
             }
-            Button("Skip rest") { engine.skipRest() }.buttonStyle(.borderedProminent)
-                .frame(maxWidth: .infinity)
+            .font(.subheadline.bold()).buttonStyle(OlympiaPressStyle())
         }
     }
 
@@ -185,8 +214,6 @@ struct OlympiaActiveWorkoutView: View {
             Image(systemName: "pause.circle.fill").font(.system(size: 90)).foregroundStyle(colors.accent)
             Text("Workout paused").font(.title.bold())
             Text("Your workout and rest clocks are paused.").foregroundStyle(colors.muted)
-            Button("Resume workout") { engine.resume(); pauseOrResumeHeartRate() }
-                .buttonStyle(.borderedProminent)
         }.frame(maxWidth: .infinity).padding(.top, 45)
     }
 
@@ -196,12 +223,45 @@ struct OlympiaActiveWorkoutView: View {
             Circle().trim(from: 0, to: CGFloat(min(1, Double(seconds) / Double(max(1, total)))))
                 .stroke(colors.accent, style: StrokeStyle(lineWidth: 6, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-                .animation(.linear(duration: 1), value: seconds)
+                .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: seconds)
             VStack(spacing: 0) {
-                Text("\(seconds)").font(.system(size: 53, weight: .bold, design: .rounded)).monospacedDigit()
-                Text("SECONDS").font(.caption2).tracking(1.5).foregroundStyle(colors.muted)
+                Text(String(format: "%d:%02d", seconds / 60, seconds % 60))
+                    .font(.system(size: 44, weight: .bold, design: .rounded)).monospacedDigit()
+                Text(engine.phase == "preparing" ? "GET READY" : "REST TIMER")
+                    .font(.caption2).tracking(1.5).foregroundStyle(colors.muted)
             }
         }.frame(width: 170, height: 170).padding(.top, 20)
+    }
+
+    private var actionFooter: some View {
+        Button {
+            entryFocused = nil
+            switch engine.phase {
+            case "preparing": engine.beginNow()
+            case "resting": engine.skipRest()
+            case "paused": engine.resume(); pauseOrResumeHeartRate()
+            default:
+                let draft = engine.session
+                let enteredWeight = Double(weight).map { units == "kg" ? $0 * 2.2046226218 : $0 }
+                engine.completeSet(weightPounds: enteredWeight, reps: Int(reps))
+                prefill()
+                if !engine.isActive { Task {
+                    await sensorStartTask?.value
+                    await finishHeartRate(for: draft, cancel: false)
+                } }
+            }
+        } label: {
+            Text(engine.phase == "preparing" ? "Start now" :
+                    engine.phase == "resting" ? "Skip rest" :
+                    engine.phase == "paused" ? "Resume workout" : "Complete set \(engine.session?.setNumber ?? 1)")
+                .font(.subheadline.bold()).foregroundStyle(.white)
+                .frame(maxWidth: .infinity).padding(.vertical, 17)
+                .background(colors.accent, in: Capsule())
+        }.buttonStyle(OlympiaPressStyle())
+            .disabled(engine.phase == "working" && Double(weight) == nil && Int(reps) == nil)
+            .opacity(engine.phase == "working" && Double(weight) == nil && Int(reps) == nil ? 0.4 : 1)
+            .frame(maxWidth: 600).frame(maxWidth: .infinity)
+            .padding(.horizontal, 20).padding(.vertical, 12).background(colors.background)
     }
 
     private func prefill() {

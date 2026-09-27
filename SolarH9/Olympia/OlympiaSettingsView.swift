@@ -6,7 +6,7 @@ struct OlympiaSettingsView: View {
     @Environment(\.olympiaColors) private var colors
     @AppStorage("olympia.units") private var units = "lb"
     @AppStorage("olympia.theme") private var theme = "dark"
-    @AppStorage("olympia.accent") private var accent = "ember"
+    @AppStorage("olympia.accent") private var accent = "sky"
     @AppStorage("olympia.displayName") private var displayName = ""
     @State private var importKind: ImportKind?
     @State private var showImporter = false
@@ -21,8 +21,10 @@ struct OlympiaSettingsView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
+            ScrollView {
+              VStack(alignment: .leading, spacing: 20) {
+                Text("Settings").font(.title2.bold())
+                settingsSection {
                     HStack(spacing: 12) {
                         Image("OlympiaMark").resizable().scaledToFit().frame(width: 48, height: 48)
                             .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -33,25 +35,33 @@ struct OlympiaSettingsView: View {
                         }
                     }
                 }
-                Section("Profile") {
+                settingsSection("Profile") {
                     TextField("Your name", text: $displayName)
                         .textContentType(.name).textInputAutocapitalization(.words)
+                        .modifier(SettingsPillField())
                     if let email = cloud.signedInEmail { Text(email).font(.caption).foregroundStyle(.secondary) }
                 }
-                Section("Appearance") {
-                    Picker("Mode", selection: $theme) {
-                        Text("System").tag("system"); Text("Dark").tag("dark"); Text("Light").tag("light")
+                settingsSection("Appearance") {
+                    LabeledContent("Mode") {
+                        Picker("Mode", selection: $theme) {
+                            Text("System").tag("system"); Text("Dark").tag("dark"); Text("Light").tag("light")
+                        }.labelsHidden().pickerStyle(.menu).modifier(SettingsPillField())
                     }
-                    Picker("Accent", selection: $accent) {
-                        Text("Ember orange").tag("ember")
-                        Text("Sky blue").tag("sky"); Text("Emerald").tag("emerald")
-                        Text("Violet").tag("violet"); Text("Sunset").tag("sunset")
+                    LabeledContent("Accent") {
+                        Picker("Accent", selection: $accent) {
+                            Text("Ember orange").tag("ember")
+                            Text("Sky blue").tag("sky"); Text("Emerald").tag("emerald")
+                            Text("Violet").tag("violet"); Text("Sunset").tag("sunset")
+                        }.labelsHidden().pickerStyle(.menu).modifier(SettingsPillField())
                     }
                 }
-                Section("Workout preferences") {
-                    Picker("Weight units", selection: $units) { Text("Pounds (lb)").tag("lb"); Text("Kilograms (kg)").tag("kg") }
+                settingsSection("Workout preferences") {
+                    LabeledContent("Weight units") {
+                        Picker("Weight units", selection: $units) { Text("Pounds (lb)").tag("lb"); Text("Kilograms (kg)").tag("kg") }
+                            .labelsHidden().pickerStyle(.menu).modifier(SettingsPillField())
+                    }
                 }
-                Section("Data & privacy") {
+                settingsSection("Data & privacy") {
                     Button { exportBackup() } label: {
                         Label("Export all training data", systemImage: "square.and.arrow.up")
                     }
@@ -65,7 +75,7 @@ struct OlympiaSettingsView: View {
                     Text("Import a workout note or text file, or a weight log note or text file.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
-                Section("Heart rate") {
+                settingsSection("Heart rate") {
                     Button { showSensor = true } label: {
                         Label("Connect or view heart-rate sensor", systemImage: "heart.text.square")
                     }
@@ -74,10 +84,12 @@ struct OlympiaSettingsView: View {
                     Text("Heart-rate metrics are for fitness and wellness, not diagnosis or emergency monitoring.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
-                Section("Cloud sync · Supabase") {
+                settingsSection("Cloud sync · Supabase") {
                     TextField("Project URL", text: $cloud.projectURL)
                         .textInputAutocapitalization(.never).autocorrectionDisabled()
+                        .modifier(SettingsPillField())
                     SecureField("Publishable / anon key", text: $cloud.publishableKey)
+                        .modifier(SettingsPillField())
                     if cloud.signedIn {
                         Text(cloud.signedInEmail ?? "Signed in").font(.caption).foregroundStyle(.secondary)
                         Button(cloud.isBusy ? "Syncing…" : "Sync now") { Task { await cloud.sync(store: store) } }
@@ -86,9 +98,15 @@ struct OlympiaSettingsView: View {
                     } else {
                         TextField("Email", text: $email).textInputAutocapitalization(.never)
                             .keyboardType(.emailAddress).autocorrectionDisabled()
+                            .modifier(SettingsPillField())
                         SecureField("Password", text: $password)
+                            .modifier(SettingsPillField())
                         HStack {
-                            Button("Sign in") { Task { await cloud.signIn(email: email, password: password) } }
+                            Button { Task { await cloud.signIn(email: email, password: password) } } label: {
+                                Text("Sign in").font(.subheadline.bold()).foregroundStyle(.white)
+                                    .padding(.horizontal, 22).frame(minHeight: 44)
+                                    .background(colors.accent, in: Capsule())
+                            }
                             Spacer()
                             Button("Create account") { Task { await cloud.signUp(email: email, password: password) } }
                         }.disabled(!cloud.configured || cloud.isBusy || email.isEmpty || password.count < 6)
@@ -97,9 +115,22 @@ struct OlympiaSettingsView: View {
                     Text("Create a free Supabase project and run the included schema.sql first. Only use its publishable key here—not a service-role key.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
+              }.padding(20)
             }
-            .navigationTitle("Settings")
-            .sheet(isPresented: $showSensor) { LiveView() }
+            .font(.subheadline)
+            .foregroundStyle(colors.text)
+            .buttonStyle(OlympiaPressStyle())
+            .scrollIndicators(.hidden)
+            .scrollDismissesKeyboard(.interactively)
+            .background(colors.background)
+            .toolbar(.hidden, for: .navigationBar)
+            .sheet(isPresented: $showSensor) {
+                LiveView()
+                    .presentationBackground(colors.background)
+                    .presentationCornerRadius(24)
+                    .presentationDragIndicator(.visible)
+                    .preferredColorScheme(colors.isLight ? .light : .dark)
+            }
             .fileImporter(isPresented: $showImporter,
                           allowedContentTypes: [.plainText, .utf8PlainText], allowsMultipleSelection: false) { result in
                 guard let kind = importKind else { return }
@@ -122,6 +153,16 @@ struct OlympiaSettingsView: View {
         }.tint(colors.accent)
     }
 
+    private func settingsSection<Content: View>(_ title: String? = nil, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if let title { Text(title).font(.subheadline.bold()).foregroundStyle(colors.text) }
+            OlympiaCard {
+                VStack(alignment: .leading, spacing: 16, content: content)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
     private func exportBackup() {
         do {
             let encoder = JSONEncoder()
@@ -132,5 +173,13 @@ struct OlympiaSettingsView: View {
             try data.write(to: url, options: .atomic)
             backupURL = url
         } catch { alertMessage = error.localizedDescription }
+    }
+}
+
+private struct SettingsPillField: ViewModifier {
+    @Environment(\.olympiaColors) private var colors
+    func body(content: Content) -> some View {
+        content.font(.subheadline).padding(.horizontal, 14).frame(minHeight: 44)
+            .background(colors.secondarySurface, in: Capsule())
     }
 }

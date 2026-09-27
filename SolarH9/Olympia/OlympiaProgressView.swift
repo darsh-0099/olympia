@@ -10,6 +10,7 @@ private struct OlympiaProgressPoint: Identifiable {
 struct OlympiaProgressView: View {
     @ObservedObject var store: OlympiaTrainingStore
     @Environment(\.olympiaColors) private var colors
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage("olympia.units") private var units = "lb"
     @State private var category = "Push"
     @State private var exercise = ""
@@ -47,13 +48,8 @@ struct OlympiaProgressView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 17) {
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text("YOUR NUMBERS").font(.caption2.bold()).tracking(1.5).foregroundStyle(colors.muted)
-                        Text("Progress").font(.largeTitle.bold()).foregroundStyle(colors.text)
-                    }
-                    Picker("Category", selection: $category) {
-                        ForEach(["Push", "Pull", "Legs", "Weight"], id: \.self) { Text($0) }
-                    }.pickerStyle(.segmented)
+                    Text("Progress").font(.title2.bold()).foregroundStyle(colors.text)
+                    selectionPills(["Push", "Pull", "Legs", "Weight"], selection: $category)
                     if category != "Weight" {
                         OlympiaCard {
                             HStack {
@@ -64,17 +60,14 @@ struct OlympiaProgressView: View {
                                 }.tint(colors.text)
                             }
                         }
-                        Picker("Metric", selection: $metric) {
-                            Text("Top set").tag("Top set")
-                            Text("Total volume").tag("Total volume")
-                        }.pickerStyle(.segmented)
+                        selectionPills(["Top set", "Total volume"], selection: $metric)
                     }
                     VStack(alignment: .leading, spacing: 6) {
                         Text(category == "Weight" ? "Body weight" : exercise)
                             .font(.caption).foregroundStyle(colors.muted)
                         if let last = points.last {
                             Text(String(format: "%.1f %@", last.value, units))
-                                .font(.system(size: 28, weight: .bold, design: .rounded)).foregroundStyle(colors.text)
+                                .font(.system(size: 32, weight: .bold)).monospacedDigit().foregroundStyle(colors.text)
                         } else {
                             Text("No recorded data").font(.title3.bold()).foregroundStyle(colors.text)
                         }
@@ -94,9 +87,7 @@ struct OlympiaProgressView: View {
                                 .frame(height: 215)
                         }
                     }
-                    Picker("Time range", selection: $range) {
-                        ForEach(["7D", "1M", "3M", "6M", "1Y"], id: \.self) { Text($0) }
-                    }.pickerStyle(.segmented)
+                    selectionPills(["7D", "1M", "3M", "6M", "1Y"], selection: $range)
                     if points.count > 1 {
                         OlympiaCard {
                             let change = points.last!.value - points.first!.value
@@ -107,11 +98,28 @@ struct OlympiaProgressView: View {
                         }
                     }
                 }.padding(20)
-            }.background(colors.background).toolbar(.hidden, for: .navigationBar)
+            }.scrollIndicators(.hidden)
+                .background(colors.background).toolbar(.hidden, for: .navigationBar)
                 .onAppear { ensureSelection() }
                 .onChange(of: category) { _, _ in ensureSelection() }
                 .onChange(of: store.sessions.count) { _, _ in ensureSelection() }
         }
+    }
+
+    private func selectionPills(_ options: [String], selection: Binding<String>) -> some View {
+        HStack(spacing: 5) {
+            ForEach(options, id: \.self) { option in
+                Button {
+                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.16)) { selection.wrappedValue = option }
+                } label: {
+                    Text(option).font(.caption.weight(.semibold))
+                        .foregroundStyle(selection.wrappedValue == option ? colors.text : colors.muted)
+                        .frame(maxWidth: .infinity).frame(minHeight: 44)
+                        .background(selection.wrappedValue == option ? colors.secondarySurface : colors.surface, in: Capsule())
+                }.buttonStyle(OlympiaPressStyle())
+                    .accessibilityAddTraits(selection.wrappedValue == option ? .isSelected : [])
+            }
+        }.accessibilityElement(children: .contain)
     }
 
     private func ensureSelection() {
