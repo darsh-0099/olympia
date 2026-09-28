@@ -2,7 +2,7 @@ import Charts
 import SwiftUI
 
 private struct OlympiaProgressPoint: Identifiable {
-    let id = UUID()
+    var id: Date { date }
     let date: Date
     let value: Double
 }
@@ -15,7 +15,7 @@ struct OlympiaProgressView: View {
     @State private var category = "Push"
     @State private var exercise = ""
     @State private var metric = "Top set"
-    @State private var range = "6M"
+    @State private var range = "All"
 
     private var exerciseNames: [String] {
         let names = store.historyExercises()
@@ -23,25 +23,47 @@ struct OlympiaProgressView: View {
     }
 
     private var points: [OlympiaProgressPoint] {
-        let from = Calendar.current.date(byAdding: .day, value: -daysInRange, to: .now) ?? .distantPast
+        let from = rangeStart ?? .distantPast
         if category == "Weight" {
             return store.weights.filter { $0.measuredAt >= from }
                 .map { OlympiaProgressPoint(date: $0.measuredAt, value: units == "kg" ? $0.pounds / 2.2046226218 : $0.pounds) }
         }
         let key = normalized(exercise)
-        return store.sessions.filter { $0.startedAt >= from }.compactMap { session in
-            let sets = session.completedSets.filter { normalized($0.exerciseName) == key }
-            guard !sets.isEmpty else { return nil }
+        guard !key.isEmpty else { return [] }
+        let matchingSets = store.sessions.flatMap(\.completedSets).filter {
+            $0.completedAt >= from && normalized($0.exerciseName) == key
+        }
+        let byDay = Dictionary(grouping: matchingSets) { Calendar.current.startOfDay(for: $0.completedAt) }
+        return byDay.compactMap { day, sets in
             let value: Double
-            if metric == "Top set" { value = sets.compactMap(\.weightPounds).max() ?? 0 }
-            else { value = sets.reduce(0) { $0 + ($1.weightPounds ?? 0) * Double($1.reps ?? 0) } }
-            return OlympiaProgressPoint(date: session.startedAt,
+            if metric == "Top set" {
+                guard let maximum = sets.compactMap(\.weightPounds).max() else { return nil }
+                value = maximum
+            } else {
+                let measuredSets = sets.filter { $0.weightPounds != nil && $0.effectiveReps != nil }
+                guard !measuredSets.isEmpty else { return nil }
+                value = measuredSets.reduce(0) { $0 + ($1.weightPounds ?? 0) * ($1.effectiveReps ?? 0) }
+            }
+            return OlympiaProgressPoint(date: day,
                                         value: units == "kg" ? value / 2.2046226218 : value)
         }.sorted { $0.date < $1.date }
     }
 
-    private var daysInRange: Int {
-        switch range { case "7D": 7; case "1M": 31; case "3M": 93; case "6M": 186; default: 366 }
+    private var rangeStart: Date? {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: .now)
+        switch range {
+        case "7D": return calendar.date(byAdding: .day, value: -6, to: today)
+        case "1M": return calendar.date(byAdding: .month, value: -1, to: today)
+        case "3M": return calendar.date(byAdding: .month, value: -3, to: today)
+        case "6M": return calendar.date(byAdding: .month, value: -6, to: today)
+        case "1Y": return calendar.date(byAdding: .year, value: -1, to: today)
+        default: return nil
+        }
+    }
+
+    private var chartStart: Date {
+        rangeStart ?? points.first?.date ?? .now
     }
 
     var body: some View {
@@ -52,12 +74,31 @@ struct OlympiaProgressView: View {
                     selectionPills(["Push", "Pull", "Legs", "Weight"], selection: $category)
                     if category != "Weight" {
                         OlympiaCard {
-                            HStack {
+                            VStack(alignment: .leading, spacing: 9) {
                                 Text("Exercise").font(.caption).foregroundStyle(colors.muted)
-                                Spacer()
-                                Picker("Exercise", selection: $exercise) {
-                                    ForEach(exerciseNames, id: \.self) { Text($0).tag($0) }
-                                }.tint(colors.text)
+                                Menu {
+                                    ForEach(exerciseNames, id: \.self) { name in
+                                        Button {
+                                            exercise = name
+                                        } label: {
+                                            if name == exercise { Label(name, systemImage: "checkmark") }
+                                            else { Text(name) }
+                                        }
+                                    }
+                                } label: {
+                                    HStack(spacing: 10) {
+                                        Text(exercise.isEmpty ? "No exercises yet" : exercise)
+                                            .font(.subheadline.weight(.semibold))
+                                            .lineLimit(1).truncationMode(.tail)
+                                        Spacer(minLength: 0)
+                                        Image(systemName: "chevron.up.chevron.down").font(.caption)
+                                    }
+                                    .foregroundStyle(colors.text)
+                                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                                    .padding(.horizontal, 14)
+                                    .background(colors.secondarySurface, in: RoundedRectangle(cornerRadius: 14))
+                                }
+                                .disabled(exerciseNames.isEmpty)
                             }
                         }
                         selectionPills(["Top set", "Total volume"], selection: $metric)
@@ -83,11 +124,11 @@ struct OlympiaProgressView: View {
                                     .interpolationMethod(.catmullRom).foregroundStyle(colors.accent)
                                 PointMark(x: .value("Date", point.date), y: .value("Value", point.value))
                                     .foregroundStyle(colors.accent)
-                            }.chartXScale(domain: (Calendar.current.date(byAdding: .day, value: -daysInRange, to: .now) ?? .now)...Date())
+                            }.chartXScale(domain: chartStart...max(.now, points.last?.date ?? .now))
                                 .frame(height: 215)
                         }
                     }
-                    selectionPills(["7D", "1M", "3M", "6M", "1Y"], selection: $range)
+                    selectionPills(["7D", "1M", "3M", "6M", "1Y", "All"], selection: $range)
                     if points.count > 1 {
                         OlympiaCard {
                             let change = points.last!.value - points.first!.value
@@ -103,6 +144,7 @@ struct OlympiaProgressView: View {
                 .onAppear { ensureSelection() }
                 .onChange(of: category) { _, _ in ensureSelection() }
                 .onChange(of: store.sessions.count) { _, _ in ensureSelection() }
+                .onChange(of: exerciseNames) { _, _ in ensureSelection() }
         }
     }
 

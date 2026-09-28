@@ -46,24 +46,50 @@ struct OlympiaImportReport {
             position += 1
             let explicit = firstMatch(#"(\d+)\s*sets?"#, in: content.lowercased()).flatMap { Int($0[1]) }
                 ?? (parts.count > 1 ? Int(parts[1].trimmingCharacters(in: .whitespaces)) : nil)
-            let repsChunk = parts.dropFirst().first { $0.contains("/") || $0.lowercased().contains("rep") } ?? ""
-            let slashReps = firstMatch(#"\b\d+(?:\s*/\s*\d+)+\b"#, in: repsChunk)?[0]
-                .components(separatedBy: "/").compactMap { Int($0.trimmingCharacters(in: .whitespaces)) } ?? []
+            let repsChunk = parts.dropFirst().first {
+                $0.contains("/") || $0.lowercased().contains("rep") || ($0.contains(",") && $0.lowercased().contains("lb"))
+            } ?? ""
+            // Commas can separate weight groups ("8/7 (35lbs), 9 (30lbs)").
+            // Parse the first rep number in each slash segment, ignoring notes
+            // such as "8 + 3 half" and weights in parentheses.
+            let repGroups = repsChunk.components(separatedBy: ",")
+            let parsedReps: [(reps: Double, weightPounds: Double?)] = repGroups.flatMap { group in
+                let groupWeight = firstMatch(#"(\d+(?:\.\d+)?)\s*(lbs?|pounds?|kg)\b"#, in: group.lowercased())
+                    .flatMap { match -> Double? in
+                        guard let value = Double(match[1]) else { return nil }
+                        return match[2] == "kg" ? value * 2.2046226218 : value
+                    }
+                let cleaned = group.replacingOccurrences(of: #"\([^)]*\)"#, with: "", options: .regularExpression)
+                return cleaned.components(separatedBy: "/").compactMap { segment -> (reps: Double, weightPounds: Double?)? in
+                    guard let match = firstMatch(#"\b(\d+(?:\.\d+)?)\b"#, in: segment),
+                          let value = Double(match[1]) else { return nil }
+                    return (value, groupWeight)
+                }
+            }
             let fixedReps = firstMatch(#"\b(\d+(?:\.\d+)?)\s*reps?\b"#, in: content.lowercased())
-                .flatMap { Double($0[1]).map { Int($0.rounded()) } }
+                .flatMap { Double($0[1]) }
             // Notes such as "4 sets - 12 reps (Last set 15)" describe a
             // different final set; preserving it matters in workout history.
             let finalSetReps = firstMatch(#"\blast\s+set\s+(\d+(?:\.\d+)?)\b"#, in: content.lowercased())
-                .flatMap { Double($0[1]).map { Int($0.rounded()) } }
-            let count = min(20, max(1, explicit ?? (slashReps.isEmpty ? 1 : slashReps.count)))
-            let weight = firstMatch(#"(\d+(?:\.\d+)?)\s*(?:lbs?|pounds?|kg)\b"#, in: content.lowercased())
                 .flatMap { Double($0[1]) }
-            let pounds = content.lowercased().contains("kg") ? weight.map { $0 * 2.2046226218 } : weight
+            let count = min(20, max(1, explicit ?? (parsedReps.isEmpty ? 1 : parsedReps.count)))
+            let weightSource = parts.last ?? content
+            let weight = (firstMatch(#"(\d+(?:\.\d+)?)\s*(lbs?|pounds?|kg)\b"#, in: weightSource.lowercased())
+                ?? firstMatch(#"(\d+(?:\.\d+)?)\s*(lbs?|pounds?|kg)\b"#, in: content.lowercased()))
+                .flatMap { match -> Double? in
+                    guard let value = Double(match[1]) else { return nil }
+                    return match[2] == "kg" ? value * 2.2046226218 : value
+                }
             for index in 0..<count {
+                let recorded = index < parsedReps.count ? parsedReps[index] : nil
+                let setWeight = recorded?.weightPounds ?? weight
+                let preciseReps = index == count - 1 ? (finalSetReps ?? recorded?.reps ?? fixedReps)
+                    : (recorded?.reps ?? fixedReps)
                 sets.append(OlympiaCompletedSet(exerciseName: exercise, exercisePosition: position - 1,
-                                                setNumber: index + 1, weightPounds: pounds,
-                                                reps: index == count - 1 ? (finalSetReps ?? (index < slashReps.count ? slashReps[index] : fixedReps))
-                                                    : (index < slashReps.count ? slashReps[index] : fixedReps),
+                                                setNumber: index + 1,
+                                                weightPounds: setWeight,
+                                                reps: preciseReps.map { Int($0.rounded()) },
+                                                preciseReps: preciseReps,
                                                 restSeconds: 0, completedAt: workoutDate))
             }
         }

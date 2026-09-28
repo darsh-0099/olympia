@@ -86,7 +86,7 @@ struct OlympiaRootView: View {
     var body: some View {
         TabView(selection: $selection) {
             OlympiaHomeView(store: store, engine: engine,
-                            onOpenProgram: { selection = 1 }, onQuickAction: { showQuickAction = true })
+                            onOpenProgram: { selection = 1 }, onCreateWorkout: { quickSheet = .workout })
                 .tabItem { Label("Home", systemImage: "house") }.tag(0)
                 .toolbar(.hidden, for: .tabBar)
             OlympiaProgramView(store: store, engine: engine).tabItem { Label("Program", systemImage: "list.bullet.rectangle") }.tag(1)
@@ -99,10 +99,8 @@ struct OlympiaRootView: View {
         .toolbar(.hidden, for: .tabBar)
         .safeAreaInset(edge: .bottom, spacing: 0) { navigationDock }
         .tint(colors.accent)
-        .confirmationDialog("Quick action", isPresented: $showQuickAction) {
-            Button("Create workout") { quickSheet = .workout }
-            Button("Log body weight") { quickSheet = .weight }
-            Button("Connect heart-rate sensor") { quickSheet = .sensor }
+        .overlay {
+            if showQuickAction { quickActionsPanel }
         }
         .sheet(item: $quickSheet) { choice in
             switch choice {
@@ -136,11 +134,6 @@ struct OlympiaRootView: View {
             }
             .buttonStyle(OlympiaPressStyle())
             .accessibilityLabel("Quick actions")
-            .contextMenu {
-                Button("Create workout", systemImage: "plus") { quickSheet = .workout }
-                Button("Log body weight", systemImage: "scalemass") { quickSheet = .weight }
-                Button("Connect heart-rate sensor", systemImage: "heart") { quickSheet = .sensor }
-            }
             dockTab("Progress", icon: "chart.bar.fill", tag: 3)
             dockTab("Settings", icon: "gearshape", tag: 4)
         }
@@ -164,13 +157,86 @@ struct OlympiaRootView: View {
         .accessibilityLabel(title)
         .accessibilityAddTraits(selection == tag ? .isSelected : [])
     }
+
+    private var quickActionsPanel: some View {
+        ZStack(alignment: .bottom) {
+            Color.black.opacity(0.55)
+                .ignoresSafeArea()
+                .onTapGesture { showQuickAction = false }
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("Start workout").font(.title3.bold()).foregroundStyle(colors.text)
+                    Spacer()
+                    Button { showQuickAction = false } label: {
+                        Image(systemName: "xmark").font(.caption.bold())
+                            .frame(width: 36, height: 36)
+                            .background(colors.secondarySurface, in: Circle())
+                    }
+                    .accessibilityLabel("Close quick actions")
+                }
+                Text(store.workouts.isEmpty ? "Create a workout to begin." : "Choose a workout to begin your session.")
+                    .font(.subheadline).foregroundStyle(colors.muted)
+                if store.workouts.isEmpty {
+                    quickActionRow("Create workout", icon: "plus") {
+                        openQuickSheet(.workout)
+                    }
+                } else {
+                    ScrollView {
+                        VStack(spacing: 8) {
+                            ForEach(store.workouts) { workout in
+                                quickActionRow(workout.name, icon: "play.fill") {
+                                    showQuickAction = false
+                                    engine.start(workout)
+                                }
+                            }
+                        }
+                    }
+                    .frame(maxHeight: 220)
+                }
+                quickActionRow("Log body weight", icon: "scalemass") {
+                    openQuickSheet(.weight)
+                }
+                quickActionRow("Connect heart-rate sensor", icon: "heart") {
+                    openQuickSheet(.sensor)
+                }
+            }
+            .padding(20)
+            .background(colors.surface, in: RoundedRectangle(cornerRadius: 26))
+            .overlay(RoundedRectangle(cornerRadius: 26).stroke(colors.border, lineWidth: 1))
+            .padding(.horizontal, 16)
+            .padding(.bottom, 12)
+        }
+        .tint(colors.accent)
+    }
+
+    private func quickActionRow(_ title: String, icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 14) {
+                Image(systemName: icon).font(.system(size: 16, weight: .semibold))
+                    .frame(width: 24)
+                    .foregroundStyle(colors.accent)
+                Text(title).font(.subheadline.bold()).foregroundStyle(colors.text)
+                Spacer()
+                Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(colors.muted)
+            }
+            .padding(.horizontal, 16).frame(minHeight: 52)
+            .background(colors.secondarySurface, in: RoundedRectangle(cornerRadius: 15))
+            .contentShape(RoundedRectangle(cornerRadius: 15))
+        }
+        .buttonStyle(OlympiaPressStyle())
+    }
+
+    private func openQuickSheet(_ choice: QuickSheet) {
+        showQuickAction = false
+        DispatchQueue.main.async { quickSheet = choice }
+    }
 }
 
 struct OlympiaHomeView: View {
     @ObservedObject var store: OlympiaTrainingStore
     @ObservedObject var engine: OlympiaWorkoutEngine
     let onOpenProgram: () -> Void
-    let onQuickAction: () -> Void
+    let onCreateWorkout: () -> Void
     @Environment(\.olympiaColors) private var colors
     @AppStorage("olympia.units") private var units = "lb"
     @AppStorage("olympia.displayName") private var displayName = ""
@@ -182,7 +248,6 @@ struct OlympiaHomeView: View {
     @State private var selectedSession: OlympiaTrainingSession?
     @State private var editingWorkout: OlympiaWorkoutTemplate?
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var todayWorkouts: [OlympiaWorkoutTemplate] { store.scheduledWorkouts(on: .now) }
     private var lastSession: OlympiaTrainingSession? { store.sessions.first { ["completed", "partial", "imported"].contains($0.status) } }
@@ -206,16 +271,24 @@ struct OlympiaHomeView: View {
                                 Spacer()
                                 Text("Best: \(bestStreak) days").font(.caption).foregroundStyle(colors.muted)
                             }
-                            Button(showCalendar ? "Hide monthly plan  ⌃" : "View monthly plan  ⌄") {
-                                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { showCalendar.toggle(); selectedDate = .now; month = .now }
-                            }.font(.caption).frame(maxWidth: .infinity).foregroundStyle(colors.muted)
+                            Button {
+                                selectedDate = .now
+                                month = .now
+                                showCalendar.toggle()
+                            } label: {
+                                Label(showCalendar ? "Hide monthly plan" : "View monthly plan",
+                                      systemImage: showCalendar ? "chevron.up" : "chevron.down")
+                                    .font(.caption.bold())
+                                    .frame(maxWidth: .infinity, minHeight: 44)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(OlympiaPressStyle())
+                            .foregroundStyle(colors.muted)
                         }
 
                     if showCalendar {
                         OlympiaMonthCalendar(store: store, month: $month, selectedDate: $selectedDate,
                                             selectedSession: $selectedSession)
-                            .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity),
-                                                    removal: .opacity))
                     }
 
                     workoutGrid
@@ -250,7 +323,9 @@ struct OlympiaHomeView: View {
                     HStack {
                         Text("Last workout").font(.headline).foregroundStyle(colors.text)
                         Spacer()
-                        Button("View all") { showHistory = true }.font(.caption.bold()).foregroundStyle(colors.accent)
+                        Button("View all") { showHistory = true }
+                            .font(.caption.bold()).foregroundStyle(colors.accent)
+                            .frame(minHeight: 44)
                     }.padding(.top, 12)
                     if let lastSession {
                         Button { selectedSession = lastSession } label: {
@@ -279,7 +354,7 @@ struct OlympiaHomeView: View {
                     } else {
                         OlympiaCard { Text("Complete or import a workout to build your history.").font(.caption).foregroundStyle(colors.muted) }
                     }
-                }.padding(.horizontal, 20).padding(.top, 18).padding(.bottom, 18)
+                }.padding(.horizontal, 20).padding(.top, 18).padding(.bottom, 32)
             }
             .scrollIndicators(.hidden)
             .background(colors.background)
@@ -292,21 +367,25 @@ struct OlympiaHomeView: View {
     }
 
     private var homeHeader: some View {
-        HStack(alignment: .center) {
+        TimelineView(.periodic(from: .now, by: 60)) { context in
             VStack(alignment: .leading, spacing: 5) {
                 Text("OLYMPIA").font(.system(size: 10, weight: .bold)).tracking(2.5)
                     .foregroundStyle(colors.muted)
-                (Text("Hey, ").foregroundColor(colors.text) +
-                 Text(displayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "athlete" : displayName)
-                    .foregroundColor(colors.muted))
-                    .font(.title2.bold())
+                Text("\(greeting(for: context.date)), \(displayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "athlete" : displayName.trimmingCharacters(in: .whitespacesAndNewlines)).")
+                    .font(.title2.bold()).foregroundStyle(colors.text)
+                    .minimumScaleFactor(0.8)
             }
-            Spacer()
-            Image("OlympiaMark").resizable().scaledToFit().frame(width: 32, height: 32)
-                .clipShape(RoundedRectangle(cornerRadius: 9))
-                .accessibilityHidden(true)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.bottom, 4)
+    }
+
+    private func greeting(for date: Date) -> String {
+        switch Calendar.current.component(.hour, from: date) {
+        case 0..<12: return "Good morning"
+        case 12..<17: return "Good afternoon"
+        default: return "Good evening"
+        }
     }
 
     private var workoutHero: some View {
@@ -358,7 +437,7 @@ struct OlympiaHomeView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Make room for your first workout.").font(.subheadline.bold()).foregroundStyle(colors.text)
                         Text("Create a routine, plan your week, and track every set.").font(.caption).foregroundStyle(colors.muted)
-                        Button("Create workout", action: onQuickAction).font(.subheadline.bold()).foregroundStyle(colors.accent)
+                        Button("Create workout", action: onCreateWorkout).font(.subheadline.bold()).foregroundStyle(colors.accent)
                             .frame(minHeight: 44)
                     }
                 }
@@ -377,7 +456,7 @@ struct OlympiaHomeView: View {
         let tint = Color(olympiaHex: workout.colorHex)
         let session = store.sessions.first { $0.workoutID == workout.id && ["completed", "partial", "imported"].contains($0.status) }
         let sets = session?.completedSets ?? []
-        let maxReps = sets.compactMap(\.reps).max()
+        let maxReps = sets.compactMap(\.effectiveReps).max()
         let maxWeight = sets.compactMap(\.weightPounds).max()
         return Button { editingWorkout = workout } label: {
             VStack(alignment: .leading, spacing: 9) {
@@ -388,7 +467,7 @@ struct OlympiaHomeView: View {
                     if let session {
                         Label(session.startedAt.formatted(.dateTime.month(.abbreviated).day()), systemImage: "calendar")
                             .font(.caption2).foregroundStyle(colors.muted)
-                        Text(sets.isEmpty ? "No sets recorded" : sets.compactMap(\.reps).map(String.init).joined(separator: " · "))
+                        Text(sets.isEmpty ? "No sets recorded" : sets.filter { $0.effectiveReps != nil }.map(\.displayReps).joined(separator: " · "))
                             .font(.caption2).foregroundStyle(colors.muted).lineLimit(1)
                     } else {
                         Text("Not started yet").font(.caption2).foregroundStyle(colors.muted)
@@ -398,7 +477,7 @@ struct OlympiaHomeView: View {
                 }
                 HStack(spacing: 8) {
                     tileMetric("\(sets.count)", label: "sets", tint: tint)
-                    tileMetric(maxReps.map(String.init) ?? "—", label: "max reps", tint: tint)
+                    tileMetric(maxReps.map { String(format: "%g", $0) } ?? "—", label: "max reps", tint: tint)
                     tileMetric(maxWeight.map { String(format: "%.0f", units == "kg" ? $0 / 2.2046226218 : $0) } ?? "—",
                                label: units, tint: tint)
                     Spacer(minLength: 0)
@@ -442,9 +521,9 @@ struct OlympiaHomeView: View {
             ForEach(0..<7, id: \.self) { offset in
                 let date = calendar.date(byAdding: .day, value: offset, to: monday) ?? today
                 Button {
-                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) {
-                        selectedDate = date; month = date; showCalendar = true
-                    }
+                    selectedDate = date
+                    month = date
+                    showCalendar = true
                 } label: {
                     VStack(spacing: 4) {
                         Text("\(calendar.component(.day, from: date))")

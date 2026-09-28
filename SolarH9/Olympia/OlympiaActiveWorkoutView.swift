@@ -165,7 +165,7 @@ struct OlympiaActiveWorkoutView: View {
                     if let exercise = engine.currentExercise,
                        let previous = store.previousSet(exercise: exercise.name,
                                                         setNumber: engine.session?.setNumber ?? 1) {
-                        Text("Previous: \(previous.weightPounds.map { String(format: "%.0f", units == "kg" ? $0 / 2.2046226218 : $0) } ?? "BW") \(units) × \(previous.reps.map(String.init) ?? "—") reps")
+                        Text("Previous: \(previous.weightPounds.map { String(format: "%.0f", units == "kg" ? $0 / 2.2046226218 : $0) } ?? "BW") \(units) × \(previous.displayReps) reps")
                             .font(.caption.bold()).foregroundStyle(colors.accent)
                     }
                     HStack(spacing: 10) {
@@ -267,7 +267,9 @@ struct OlympiaActiveWorkoutView: View {
     private func prefill() {
         guard let exercise = engine.currentExercise else { return }
         let previous = store.previousSet(exercise: exercise.name, setNumber: engine.session?.setNumber ?? 1)
-        weight = previous?.weightPounds.map { String(format: "%.1f", units == "kg" ? $0 / 2.2046226218 : $0) } ?? ""
+        // Logged weight is the best guide; the template target fills gaps in history.
+        let suggestedPounds = previous?.weightPounds ?? exercise.targetWeightPounds
+        weight = suggestedPounds.map { String(format: "%.1f", units == "kg" ? $0 / 2.2046226218 : $0) } ?? ""
         reps = previous?.reps.map(String.init) ?? ""
     }
 

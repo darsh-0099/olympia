@@ -3,8 +3,13 @@ import SwiftData
 import Combine
 
 func olympiaExerciseKey(_ name: String) -> String {
-    var key = name.lowercased().filter(\.isLetter)
+    var key = name.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+        .filter(\.isLetter)
     if key.hasSuffix("s"), !key.hasSuffix("ss") { key.removeLast() }
+    // A known imported-note alias; other parenthetical variants remain distinct.
+    if key == "cablestraightbarbicepcurl" || key == "cablestraightbarcurlsmithbarunderarmpit" {
+        return "cablestraightbarcurl"
+    }
     return key
 }
 
@@ -13,6 +18,14 @@ struct OlympiaExercise: Codable, Identifiable, Hashable {
     var name: String
     var sets: Int
     var restSeconds: Int
+    var targetWeightPounds: Double? = nil
+}
+
+struct OlympiaWorkoutSuggestion: Identifiable {
+    let id: UUID
+    let name: String
+    let exercises: [OlympiaExercise]
+    let lastPerformedAt: Date
 }
 
 struct OlympiaProgramSlot: Codable, Identifiable, Hashable {
@@ -29,8 +42,15 @@ struct OlympiaCompletedSet: Codable, Identifiable, Hashable {
     var setNumber: Int
     var weightPounds: Double?
     var reps: Int?
+    var preciseReps: Double? = nil
     var restSeconds: Int
     var completedAt: Date
+
+    var effectiveReps: Double? { preciseReps ?? reps.map(Double.init) }
+    var displayReps: String {
+        guard let value = effectiveReps else { return "—" }
+        return String(format: "%g", value)
+    }
 }
 
 @Model final class OlympiaWorkoutTemplate {
@@ -278,6 +298,39 @@ final class OlympiaTrainingStore: ObservableObject {
             if byKey[key] == nil { byKey[key] = name }
         }
         return byKey.values.sorted()
+    }
+
+    func historyWorkoutSuggestions() -> [OlympiaWorkoutSuggestion] {
+        var seenRoutines = Set<String>()
+        return sessions.compactMap { session in
+            let sets = session.completedSets
+            guard !sets.isEmpty else { return nil }
+            let nameKey = session.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+            guard !nameKey.isEmpty else { return nil }
+
+            var orderedKeys: [String] = []
+            var grouped: [String: [OlympiaCompletedSet]] = [:]
+            for set in sets.sorted(by: { $0.exercisePosition < $1.exercisePosition }) {
+                let nameKey = olympiaExerciseKey(set.exerciseName)
+                guard !nameKey.isEmpty else { continue }
+                let key = "\(set.exercisePosition):\(nameKey)"
+                if grouped[key] == nil { orderedKeys.append(key) }
+                grouped[key, default: []].append(set)
+            }
+            let exercises = orderedKeys.compactMap { key -> OlympiaExercise? in
+                guard let recorded = grouped[key], let first = recorded.first else { return nil }
+                return OlympiaExercise(name: first.exerciseName,
+                                       sets: max(1, min(12, Set(recorded.map(\.setNumber)).count)),
+                                       restSeconds: first.restSeconds > 0 ? first.restSeconds : 90,
+                                       targetWeightPounds: recorded.compactMap(\.weightPounds).last)
+            }
+            guard !exercises.isEmpty else { return nil }
+            let signature = nameKey + "|" + exercises.map { olympiaExerciseKey($0.name) }.joined(separator: "|")
+            guard seenRoutines.insert(signature).inserted else { return nil }
+            return OlympiaWorkoutSuggestion(id: session.id, name: session.name,
+                                            exercises: exercises, lastPerformedAt: session.startedAt)
+        }
     }
 
     func addImportedSession(name: String, date: Date, sets: [OlympiaCompletedSet]) {

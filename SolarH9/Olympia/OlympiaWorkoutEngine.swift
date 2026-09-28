@@ -33,7 +33,20 @@ final class OlympiaWorkoutEngine: ObservableObject {
     var progress: Double { totalSetCount > 0 ? Double(completedSetCount) / Double(totalSetCount) : 0 }
 
     func start(_ workout: OlympiaWorkoutTemplate) {
-        guard session == nil, let store, !workout.exercises.isEmpty else { return }
+        guard let store else { return }
+        if let current = session {
+            if ["completed", "partial"].contains(current.status) {
+                session = nil
+                ticker?.cancel(); ticker = nil
+            } else {
+                store.errorMessage = "Finish or discard \(current.name) before starting another workout."
+                return
+            }
+        }
+        guard !workout.exercises.isEmpty else {
+            store.errorMessage = "Add an exercise to \(workout.name) before starting it."
+            return
+        }
         let draft = store.createSession(for: workout)
         draft.phaseDeadline = .now.addingTimeInterval(120)
         store.persistSession(draft)

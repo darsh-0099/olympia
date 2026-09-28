@@ -188,7 +188,7 @@ struct OlympiaSessionDetailView: View {
                             HStack {
                                 Text("Set \(set.setNumber)")
                                 Spacer()
-                                Text("\(set.reps.map(String.init) ?? "—") reps × \(set.weightPounds.map { String(format: "%.1f", units == "kg" ? $0 / 2.2046226218 : $0) } ?? "BW") \(units)")
+                                Text("\(set.displayReps) reps × \(set.weightPounds.map { String(format: "%.1f", units == "kg" ? $0 / 2.2046226218 : $0) } ?? "BW") \(units)")
                                     .foregroundStyle(.secondary)
                             }
                         }

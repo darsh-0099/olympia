@@ -72,7 +72,7 @@ struct OlympiaSettingsView: View {
                     Button { importKind = .weights; showImporter = true } label: {
                         Label("Import body weight data", systemImage: "square.and.arrow.down")
                     }
-                    Text("Import a workout note or text file, or a weight log note or text file.")
+                    Text("Import a workout note or text file. Logged workouts become quick adds when you create a workout in Program. Weight logs can be imported separately.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 settingsSection("Heart rate") {
@@ -144,7 +144,7 @@ struct OlympiaSettingsView: View {
                         ? OlympiaNoteImporter.importWorkouts(text, into: store)
                         : OlympiaNoteImporter.importWeights(text, into: store)
                     let report = importReport!
-                    alertMessage = "Imported \(report.sessions) workouts, \(report.sets) sets, and \(report.weights) weights. \(report.skipped) lines were skipped."
+                    alertMessage = "Imported \(report.sessions) workouts, \(report.sets) sets, and \(report.weights) weights. \(report.skipped) lines were skipped.\(kind == .workouts && report.sessions > 0 ? " Your logged workouts are now available as quick adds in Program." : "")"
                 } catch { alertMessage = error.localizedDescription }
             }
             .alert("Import / export", isPresented: Binding(get: { alertMessage != nil }, set: { if !$0 { alertMessage = nil } })) {

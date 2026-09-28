@@ -106,6 +106,55 @@ final class ExperienceTests: XCTestCase {
         XCTAssertEqual(sets.prefix(3).compactMap(\.weightPounds), [85, 85, 85])
     }
 
+    func testNoteImportPreservesRepGroupsAndKnownCableCurlAlias() throws {
+        let store = try OlympiaTrainingStore(inMemory: true)
+        let report = OlympiaNoteImporter.importWorkouts("""
+        Pull 9/2/25:
+        1. Cable Straight Bar Bicep Curl - 4 sets - 12/12/11.5/10 reps - 37.5lbs
+        Pull 3/20/26:
+        1. Cable Straight Bar Curl (Smith bar under armpits) - 8/7 (20kg), 9 (30lbs)
+        """, into: store)
+
+        XCTAssertEqual(report.sessions, 2)
+        XCTAssertEqual(report.sets, 7)
+        let latest = try XCTUnwrap(store.sessions.first)
+        XCTAssertEqual(latest.completedSets.compactMap(\.reps), [8, 7, 9])
+        let weights = latest.completedSets.compactMap(\.weightPounds)
+        XCTAssertEqual(weights.count, 3)
+        XCTAssertEqual(weights[0], 20 * 2.2046226218, accuracy: 0.001)
+        XCTAssertEqual(weights[1], 20 * 2.2046226218, accuracy: 0.001)
+        XCTAssertEqual(weights[2], 30, accuracy: 0.001)
+        XCTAssertEqual(olympiaExerciseKey("Cable Straight Bar Bicep Curl"),
+                       olympiaExerciseKey("Cable Straight Bar Curl (Smith bar under armpits)"))
+        XCTAssertEqual(store.historyExercises().count, 1)
+        XCTAssertEqual(store.historyWorkoutSuggestions().first?.exercises.first?.sets, 3)
+        let early = try XCTUnwrap(store.sessions.last)
+        XCTAssertEqual(early.completedSets[2].reps, 12)
+        XCTAssertEqual(early.completedSets[2].preciseReps, 11.5)
+        XCTAssertEqual(early.completedSets[2].effectiveReps, 11.5)
+        XCTAssertEqual(early.completedSets[2].displayReps, "11.5")
+
+        let encoded = try JSONEncoder().encode(early.completedSets[2])
+        var legacy = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        legacy.removeValue(forKey: "preciseReps")
+        let legacySet = try JSONDecoder().decode(OlympiaCompletedSet.self,
+                                                 from: JSONSerialization.data(withJSONObject: legacy))
+        XCTAssertNil(legacySet.preciseReps)
+        XCTAssertEqual(legacySet.effectiveReps, 12)
+    }
+
+    func testHistoryWorkoutSuggestionsKeepsDistinctRoutinesWithSameName() throws {
+        let store = try OlympiaTrainingStore(inMemory: true)
+        _ = OlympiaNoteImporter.importWorkouts("""
+        Pull 3/20/26:
+        1. Cable Row - 3 sets - 12 reps - 60lbs
+        Pull 3/21/26:
+        1. Lat Pulldown - 3 sets - 10 reps - 70lbs
+        """, into: store)
+
+        XCTAssertEqual(store.historyWorkoutSuggestions().count, 2)
+    }
+
     func testNoteImportDoesNotTreatDateLookingSlashRepsAsAHeader() throws {
         let store = try OlympiaTrainingStore(inMemory: true)
         let report = OlympiaNoteImporter.importWorkouts("""
