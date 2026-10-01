@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Verify and unpack reviewed Olympia source
         run: |
-          echo '1e0b00ec933778cabe01f71dac263f053209587ff87441cbdaf3841314c70de2  Olympia-source.zip' | shasum -a 256 -c -
+          echo 'a3956e41d9420b88e900de9c9e69709116a489b22e09304061335f5610f5fe6b  Olympia-source.zip' | shasum -a 256 -c -
           python3 - <<'PY'
           import zipfile
           from pathlib import PurePosixPath
