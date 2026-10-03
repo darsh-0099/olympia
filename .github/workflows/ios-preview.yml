@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Verify and unpack reviewed Olympia source
         run: |
-          echo 'a3956e41d9420b88e900de9c9e69709116a489b22e09304061335f5610f5fe6b  Olympia-source.zip' | shasum -a 256 -c -
+          echo '79737dd8247a91e697cccc2a17c622bd3e55a9b37f8469ce0dc4196995f6aa51  Olympia-source.zip' | shasum -a 256 -c -
           python3 - <<'PY'
           import zipfile
           from pathlib import PurePosixPath
@@ -62,7 +62,8 @@ jobs:
           TEST_SCOPE=()
           if [ "$FULL_SUITE" != "true" ]; then
             TEST_SCOPE=(-only-testing:SolarH9Tests/ExperienceTests
-                        -only-testing:SolarH9Tests/OlympiaBackupMergeTests)
+                        -only-testing:SolarH9Tests/OlympiaBackupMergeTests
+                        -only-testing:SolarH9Tests/OlympiaScheduleRolloverTests)
           fi
           xcodebuild -project SolarH9.xcodeproj -scheme SolarH9 \
             -configuration Debug -destination "platform=iOS Simulator,id=$DEVICE_ID" \
