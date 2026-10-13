@@ -8,8 +8,9 @@ Native SwiftUI rebuild of the Olympia workout tracker, adapted from the prior we
 - Weekly schedules with the same workout on multiple days, or workout rotation with configurable rest days.
 - Native workout flow: 120-second equipment prep, previous-set targets, editable weight/reps, wall-clock rest timer, pause/resume, partial completion, and recovery of an interrupted session.
 - Home calendar with planned colors and completed sessions, progress charts, Notes/text workout and body-weight imports, JSON export, units, and appearance settings.
+- Aurora Glass UI refresh with six selectable scenic themes (Aurora by default), glass-styled Home/Program/Progress/Settings and workout sheets, and an updated schedule/workout/history editor. Native Liquid Glass is used on iOS 26+ with a material fallback on earlier supported iOS versions.
 - Standard Bluetooth Heart Rate Service (0x180D / 0x2A37) scanning and recording inherited from SolarH9. Polar H9 and WHOOP in HR Broadcast mode are expected to be discoverable if they advertise that standard service; neither has been device-tested in this rebuild.
-- Heart-rate Live Activity (Lock Screen and Dynamic Island) and a Home Screen launch widget.
+- Heart-rate Live Activity (Lock Screen and Dynamic Island), a Home Screen launch widget, and large Week/Active Workout widgets.
 - Supabase email/password account and manual cloud-sync code, plus row-level-security schema. Cloud sync needs a project URL and publishable key and has not been end-to-end tested.
 
 ## Set up Supabase
@@ -23,15 +24,38 @@ The native app uses separate Supabase accounts. It does not automatically inheri
 
 ## Build
 
-This Mac currently lacks full Xcode and iOS signing credentials. Hosted builds can compile and package an unsigned engineering preview. On a Mac with Xcode 16+ and a configured Apple Developer team, open `SolarH9.xcodeproj`, select the `SolarH9` scheme (the internal scheme name), configure signing and a unique bundle identifier, then archive/export an iOS app.
+This Mac currently lacks full Xcode and iOS signing credentials. Hosted builds can compile and package an unprovisioned engineering preview. On a Mac with Xcode 16+ and a configured Apple Developer team, open `SolarH9.xcodeproj`, select the `SolarH9` scheme (the internal scheme name), configure signing and a unique bundle identifier, then archive/export an iOS app.
 
-The private [Olympia GitHub repository](https://github.com/darsh-0099/olympia) has a manual macOS Actions workflow. [Run 36216324484](https://github.com/darsh-0099/olympia/actions/runs/36216324484) successfully compiled for the simulator and packaged an unsigned `Olympia.ipa`. Its regression suite had one failing note-import test; all other tests passed. The importer defect is now fixed in source, with the latest changes awaiting hosted verification. The workflow defaults to focused Olympia experience tests to conserve Actions minutes; enable `full_suite` when dispatching to run every regression test.
+The private [Olympia GitHub repository](https://github.com/darsh-0099/olympia) builds a reviewed source ZIP after checking its SHA-256. Build 21 is the historical verified preview (45 focused tests reported passing). The 2026-10-13 candidate adds a sensor-independent workout Live Activity, ring/timer Lock Screen display, timer/laurel Dynamic Island, workout-scoped previous-set references, and a four-action Home sheet. Local syntax/plist checks are available, but compilation, full regression tests, and device behavior require hosted Xcode/device verification. The dedicated `codex/live-workout-preview-2026-10-13` branch triggers a full-suite candidate build; main builds remain manual.
 
-For a non-installable unsigned archive, run `scripts/build_unsigned_ipa.sh`; it outputs `Olympia.ipa`. A signed IPA requires Xcode signing/provisioning. Do not mistake an unsigned archive for something an iPhone can install.
+For an unprovisioned SideStore preview, run `scripts/build_unsigned_ipa.sh`; it outputs `Olympia.ipa`. The app and extension carry ad-hoc signatures only so SideStore can discover their App Group request. They have no provisioning profile or device-installable signature: SideStore must provision and re-sign both before an iPhone can install them.
 
 ## Known gaps before release
 
-- Latest-source hosted verification is pending. Physical-device QA, hardware HR validation, cloud-sync end-to-end testing, and signed installation remain unverified.
-- Supabase sync is currently manual and snapshot-based; it needs a robust multi-device conflict/deletion strategy before it is safe to market as seamless real-time sync.
-- Native Sign in with Apple, home-widget workout data, and a complete migration from the existing hosted website are not yet connected.
+- Build 21 compiled the Aurora Glass source; the new Live Activity candidate still needs hosted verification and device visual/accessibility review. Physical-device QA, hardware HR validation, cloud-sync end-to-end testing, and signed installation remain unverified.
+- Supabase sync is manual and snapshot-based, with three-way conflict/deletion checks and optimistic revision writes in source; live integration testing remains necessary.
+- Native Sign in with Apple and a complete migration from the existing hosted website are not yet connected. Home-widget workout data requires matching App Group provisioning and device verification (see below).
 - The note importer covers common dated workout lines and slash-separated reps; unusual free-form lines should be reviewed after import.
+## Large home-screen widgets
+
+The Week and Active Workout widgets are `systemLarge` only. They read a compact
+snapshot of actual local Olympia training data (schedule, completed sessions,
+workout phase/sets, and an optional recent Polar H9 reading). The widgets do not
+show demo heart-rate values. A reading disappears after 30 seconds; WidgetKit
+controls actual refresh timing, so the widget is not a live heart-rate monitor.
+
+Both the app and widget extension declare the `group.com.olympia.app` App Group.
+To show personal data, the installed signatures and provisioning profiles **must
+both** authorize the same group. If the shared container cannot be opened (or
+the app has not written a snapshot yet), the widgets show an honest unavailable
+state and open Olympia when tapped. SideStore may re-sign or remap App Groups;
+widget-to-app group sharing has been reported to fail in SideStore even when an
+Xcode-installed build works. Verify the final signed app and `.appex` entitlements
+and test on-device before relying on data display. The unprovisioned IPA build does
+not prove App Group access.
+
+## Workout Live Activity candidate
+
+The workout engine starts its own Live Activity without requiring a sensor. Prep/rest use system-rendered absolute-deadline timers; working shows elapsed workout time, and pause freezes it. The Lock Screen card shows the upcoming/current exercise, set, previous-workout target, completion progress, and only a fresh real sensor reading below the timer. Pause/Resume and Skip Rest are session-scoped Live Activity intents in the app process, independent of the widget App Group. The compact Dynamic Island shows only Olympia's existing laurel with an iridescent tint and the timer; Reduce Motion keeps the mark silver. iOS controls update animations; this is not a continuous RGB animation. Background phase transitions and sensor availability must be confirmed on-device.
+
+Exercise-progress charts and a separate nutrition prototype are proposed, not included in this candidate. The Programs tab stays available until a replacement is approved and ready.
